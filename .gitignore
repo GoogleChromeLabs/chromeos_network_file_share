@@ -1,0 +1,7 @@
+/app/glibc/
+/app/bower_components/
+/nacl/glibc/
+/nacl/pnacl/
+/app/mount_dialog.html
+/app/mount_dialog.js
+/app/common.js

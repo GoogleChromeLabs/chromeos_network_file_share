@@ -1,0 +1,36 @@
+Setup
+=====
+  TODO!
+
+Overview
+========
+  The NaCl port is currently patched from Samba 4.1.16.
+
+Nacl SDK
+========
+
+  # Update SDK (currently using pepper_canary).
+  ./naclsdk update pepper_canary --force
+
+Building The App/Extension
+==========================
+
+  # Setup environment
+  export NACL_ARCH=x86_64
+  export TOOLCHAIN=glibc
+  export NACL_SDK_ROOT=/path/to/your/nacl/sdk
+
+  # Build
+  nacl/build.sh
+
+  # Package
+  tools/to_temp.sh
+
+Troubleshooting
+===============
+
+In file included from nacl_fsp.cc:24:
+./SambaFsp.h:20:10: fatal error: 'samba/libsmbclient.h' file not found
+#include "samba/libsmbclient.h"
+
+If you see this error follow the steps above for 'Setup environment'

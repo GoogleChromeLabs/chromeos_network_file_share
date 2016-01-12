@@ -1,0 +1,82 @@
+<!doctype html>
+<!--
+Mount a share 'dialog'.
+ -->
+<html>
+  <head>
+    <title>Mount A New File Share</title>
+
+    <script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+    <script src="log.js"></script>
+    <script src="utils.js"></script>
+    <script src="metadata_cache.js"></script>
+    <script src="samba.js"></script>
+    <script src="window_launchers.js"></script>
+    <script src="url.js"></script>
+    <script src="ip.js"></script>
+    <script src="net.js"></script>
+    <script src="stream.js"></script>
+    <script src="lmhosts.js"></script>
+    <script src="cred_store.js"></script>
+    <script src="nbt.js"></script>
+    <script src="popup.js"></script>
+  </head>
+  <body class="fullbleed vertical layout" unresolved>
+    <link rel="stylesheet" href="mount_dialog.css">
+
+    <link rel="import" href="bower_components/paper-input/paper-input.html">
+    <link rel="import" href="bower_components/paper-toolbar/paper-toolbar.html">
+    <link rel="import" href="bower_components/paper-header-panel/paper-header-panel.html">
+    <link rel="import" href="bower_components/iron-icons/iron-icons.html">
+    <link rel="import" href="bower_components/paper-icon-button/paper-icon-button.html">
+    <link rel="import" href="bower_components/paper-button/paper-button.html">
+    <link rel="import" href="bower_components/paper-dialog/paper-dialog.html">
+    <link rel="import" href="bower_components/paper-spinner/paper-spinner.html">
+    <link rel="import" href="bower_components/paper-toast/paper-toast.html">
+    <link rel="import" href="bower_components/paper-tooltip/paper-tooltip.html">
+    <link rel="import" href="bower_components/paper-checkbox/paper-checkbox.html">
+    <link rel="import" href="bower_components/iron-collapse/iron-collapse.html">
+    <link rel="import" href="bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+
+    <link rel="import" href="local_components/domain-input/domain-input.html">
+
+    <paper-dialog id="spinner_overlay" modal="true">
+      <div id="dialog_wrapper_div">
+        <div id="spinner_div"><paper-spinner id="spinner" active="true" class="horizontal center-justified layout"></paper-spinner></div>
+        <p id="mounting_spinner_text">Mounting network share...</p>
+      </div>
+    </paper-dialog>
+
+    <paper-toast id="errorToast" duration="5000"></paper-toast>
+
+    <panel-header-panel class="flex">
+      <paper-toolbar id="header">
+        <span class="flex" id="header_text">Mount File Share</span>
+      </paper-toolbar>
+      <div id="body_content">
+        <div>
+          <paper-input label="Share Path" id="sharePath" spellcheck="false" maxlength="512" autofocus></paper-input>
+          <paper-tooltip for="sharePath" position="top" offset="0">The share path can either be in the Windows(tm) format eg. \\server\share or an smb URL eg. smb://server/share</paper-tooltip>
+        </div>
+        <paper-checkbox id="passwordCheck">My file share needs a password</paper-checkbox>
+        <iron-collapse id="collapsedContent">
+          <div>
+            <div>
+              <domain-input id="user_domain_input"></domain-input>
+              <paper-tooltip for="user_domain_input" position="top">If your user is part of a domain, enter it with the format DOMAIN\username</paper-tooltip>
+            </div>
+            <paper-input label="Password" id="password" type="password"></paper-input>
+            <div>
+              <paper-checkbox id="savePassword">Store credentials</paper-checkbox>
+              <paper-tooltip for="savePassword" position="right">Shares that do not store credentials are unmounted on reboot.</paper-tooltip>
+            </div>
+          </div>
+        </iron-collapse>
+        <div id="buttonDiv">
+          <paper-button default id="mountButton">Mount</paper-button>
+          <paper-button id="cancelButton">Cancel</paper-button>
+        </div>
+      </div>
+    </panel-header-panel>
+  </body>
+</html>

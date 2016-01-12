@@ -1,0 +1,57 @@
+@font-face {
+    font-family: "Roboto";
+    src: url("assets/Roboto-Medium.woff2") format("woff2");
+    font-weight: 500;
+}
+
+body {
+  font-family: Roboto;
+  font-weight: 500;
+}
+
+core-header-panel {
+  background: white;
+}
+#header {
+  background-color: #2196F3;
+}
+#mountButton {
+  background-color: #2196F3;
+  color: white;
+  width: 90px;
+}
+#cancelButton {
+  color: #cccccc;
+  width: 90px;
+  font-size: 13px;
+}
+paper-toolbar {
+  font-size: 13px;
+}
+#header_text {
+  font-family: Roboto;
+  font-weight: 500;
+  font-size: 15px;
+}
+#navheader {
+  background-color: #56BA89;
+}
+.content {
+  padding: 20px;
+}
+
+#body_content {
+  margin: 20px;
+}
+
+#buttonDiv {
+  margin-top: 15px;
+  margin-bottom: 10px;
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+}
+
+#spinner {
+  margin: auto;
+}

@@ -1,0 +1,49 @@
+{
+  "manifest_version": 2,
+
+  "name": "Network File Share",
+  "description": "Support for SMB file shares in ChromeOS.",
+  "version": "0.31.15329",
+  "author": "Zentaro Kavanagh",
+  "icons": {
+    "128": "icon128.png"
+  },
+  "app": {
+    "background": {
+      "page": "plugin.html"
+    }
+  },
+  "permissions": [
+    "fileSystemProvider",
+    "system.network",
+    "storage",
+    "mdns",
+    {
+      "socket": [
+          "tcp-listen:*:*",
+          "tcp-connect",
+          "resolve-host",
+          "udp-bind:*:*",
+          "udp-send-to:*:*",
+          "udp-multicast-membership",
+          "resolve-host"
+      ]
+    }
+  ],
+  "sockets": {
+    "tcp": {
+      "connect": "*"
+    },
+    "udp": {
+      "send": "*",
+      "bind": "*",
+      "multicastMembership": ""
+    }
+  },
+  "file_system_provider_capabilities": {
+    "configurable": false,
+    "multiple_mounts": true,
+    "watchable": false,
+    "source": "network"
+  }
+}

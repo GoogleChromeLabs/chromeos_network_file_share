@@ -1,0 +1,68 @@
+<dom-module id="domain-input">
+  <link rel="import" type="stylesheet" href="domain-input.css">
+  <link rel="import" href="../../bower_components/paper-input/paper-input.html">
+
+  <template>
+    <div id="container">
+      <paper-input id="input_field" spellcheck="false" maxlength="64" label="User name" on-input="inputChanged"></paper-input>
+      <div id="domain_label">&nbsp;</div>
+    </div>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'domain-input',
+      properties: {
+        domain: {
+          type: String,
+          readOnly: true
+        },
+        user: {
+          type: String,
+          readOnly: true
+        },
+        isValid: {
+          type: Boolean,
+          readOnly: true
+        }
+      },
+
+      ready: function() {
+        console.log('Element created');
+        this._setDomain('');
+        this._setUser('');
+        this.inputField = this.$.input_field;
+      },
+
+      inputChanged: function(ev) {
+        this._setDomain('');
+        this._setUser('');
+        this._setIsValid(true);
+        var trimmed = this.inputField.value.trim();
+        if (trimmed.length > 0) {
+          var parts = trimmed.split('\\');
+          if (parts.length == 1) {
+            this._setDomain('');
+            this._setUser(parts[0]);
+          } else if (parts.length == 2) {
+            this._setDomain(parts[0]);
+            this._setUser(parts[1]);
+          } else {
+            this._setIsValid(false);
+          }
+        }
+
+        if (this.isValid) {
+          if (this.domain.length > 0) {
+            this.$.domain_label.textContent = 'Domain: ' +
+                this.domain.toUpperCase();
+          } else {
+            this.$.domain_label.textContent = '';
+          }
+        } else {
+          this.$.domain_label.textContent = 'Error: Invalid user name';
+        }
+      }
+    });
+  </script>
+</dom-module>

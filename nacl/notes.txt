@@ -1,0 +1,4 @@
+${NACL_ROOT}nacl_sdk/pepper_${TOOL_VERSION}/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc \
+  nacl_fsp.c -I${NACL_ROOT}nacl_sdk/pepper_${TOOL_VERSION}/include \
+  -L${NACL_ROOT}nacl_sdk/pepper_${TOOL_VERSION}/lib/newlib/Release -o nacl_fsp_x86_64.nexe \
+  -m32 -g -O2 -lppapi
