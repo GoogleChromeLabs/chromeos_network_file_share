@@ -1,10 +1,70 @@
-Setup
-=====
-  TODO!
-
 Overview
 ========
-  The NaCl port is currently patched from Samba 4.1.16.
+This is a Chrome App that extends the built in File Manager to be able to
+support connecting to SMB file shares.
+
+The NaCl port is currently patched from Samba 4.1.16.
+
+Setup
+=====
+
+1) Download the NaCl SDK and unzip it as directed.
+      https://developer.chrome.com/native-client/sdk/download
+
+2) Update the SDK and get the canary version (at least until the required code
+gets to the stable branch).
+      cd nacl_sdk
+      ./naclsdk update
+      ./naclsdk update pepper_canary
+      export NACL_SDK_ROOT=/path/to/nacl_sdk/pepper_canary
+
+3) Get depot_tools and gclient.
+      git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+
+4) Put depot_tools on the path (or put it in your .bachrc)
+      https://www.chromium.org/developers/how-tos/install-depot-tools
+
+5) Get WebPorts (aka NaCl Ports).
+      mkdir webports
+      cd webports
+      gclient config --name=src https://chromium.googlesource.com/webports.git
+      gclient sync
+
+6) Install a missing dependency from the NaCl SDK.
+      sudo apt-get install libglib2.0-0:i386
+
+7) Build Samba.
+      cd webports/src
+      ./make_all.sh samba F=1 V=1
+
+8) Get the App code.
+      git clone https://github.com/GoogleChrome/chromeos_network_file_share
+
+9) Install bower.
+      https://syntaxsugar.github.io/posts/2014/05/how-to-install-bower-on-ubuntu-1404-lts/
+
+      sudo apt-get install nodejs
+      sudo ln -s /usr/bin/nodejs /usr/bin/node
+      sudo apt-get install npm
+      sudo npm install -g bower
+
+10) Get the bower dependencies.
+      cd chromeos_network_file_share/app
+      bower install
+
+11) Install Vulcanize and Crisper.
+      sudo npm install -g vulcanize
+      sudo npm install -g crisper
+
+12) Setup build environment
+      # Set NACL_SDK_ROOT if not done above
+      export TOOLCHAIN=glibc
+      export NACL_ARCH=x86_64 # or arm
+      # TODO: Figure out how to build both at same time.
+
+13) Finally you can build!
+      cd chromeos_network_file_share
+      nacl/build.sh
 
 Nacl SDK
 ========
