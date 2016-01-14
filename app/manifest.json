@@ -3,7 +3,7 @@
 
   "name": "Network File Share",
   "description": "Support for SMB file shares in ChromeOS.",
-  "version": "0.31.15329",
+  "version": "0.32.16013",
   "author": "Zentaro Kavanagh",
   "icons": {
     "128": "icon128.png"
