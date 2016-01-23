@@ -66,6 +66,24 @@ gets to the stable branch).
       cd chromeos_network_file_share
       nacl/build.sh
 
+Arm Nacl_IO Bug
+===============
+
+There is currently a bug that causes a crash on ARM Release builds. Until the
+bug is fixed the workaround is to build libnacl_io.so with optimizations turned
+off. If you don't do this extra step prior to building the app the ARM build
+will crash.
+
+Before building the app edit $NACL_SDK_ROOT/src/nacl_io/Makefile and add
+'CFLAGS += -O0' (without quotes) after the line 'CFLAGS += -DNACL_IO_LOGGING=0'
+then
+
+cd $NACL_SDK_ROOT/src/nacl_io/
+make V=1 CONFIG=Release TOOLCHAIN=glibc NACL_ARCH=arm
+
+That will rebuild libnacl_io.so with optimization disabled. Then rebuild the
+app.
+
 Nacl SDK
 ========
 
