@@ -9,7 +9,6 @@
 
 TARGET = nacl_fsp
 
-VALID_ARCHES := x86_64
 include $(NACL_SDK_ROOT)/tools/common.mk
 
 EXTRA_INC_PATHS = ${NACL_SDK_ROOT}/ports/include

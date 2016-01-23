@@ -19,7 +19,8 @@
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 pushd $THIS_DIR
-make V=1
+make V=1 TOOLCHAIN=glibc VALID_ARCHES='x86_64 arm'
+
 
 if [ $? -eq 0 ]; then
   echo Build successful.
