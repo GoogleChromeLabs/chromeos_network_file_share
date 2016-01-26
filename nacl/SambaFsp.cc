@@ -367,6 +367,7 @@ void SambaFsp::readFile(const ReadFileOptions& options,
     // TODO(zentaro): Error handling.
     // TODO(zentaro): Check buffer size.
     // TODO(zentaro): API with >2GB file size???
+    // TODO(zentaro): Alias it->second
     int openFileId = it->second.sambaFileId;
     int lengthAtOpen = it->second.lengthAtOpen;
     off_t actualOffset = it->second.offset;
@@ -389,36 +390,60 @@ void SambaFsp::readFile(const ReadFileOptions& options,
 
     this->logger.Info("readFiles: lengthAtOpen=" +
                       Util::ToString(lengthAtOpen));
-    uint32_t remainingLength = lengthAtOpen - options.offset;
-    uint32_t totalBytesToRead =
-        remainingLength < options.length ? remainingLength : options.length;
+    // Even though the Files app knows how big the file is, it will still
+    // try to read past the end of the file so this ensures totalBytesToRead
+    // is restricted to the number of remaining bytes in the file.
+    // TODO(zentaro): Use min.
+    uint32_t remainingFileLength = lengthAtOpen - options.offset;
+    uint32_t totalBytesToRead = remainingFileLength < options.length 
+        ? remainingFileLength 
+        : options.length;
 
     this->logger.Info("readFiles req=" + Util::ToString(options.length) +
                       " reading=" + Util::ToString(totalBytesToRead));
     pp::VarArrayBuffer buffer(totalBytesToRead);
 
-    // Don't read 0 bytes or the API will complain. Just return the empty
-    // VarArrayBuffer.
+    const size_t MAX_BYTES_PER_READ = 128 * 1024;
+
+    // Nothing to do if 0 bytes requested.
     if (totalBytesToRead > 0) {
       void* buf = static_cast<void*>(buffer.Map());
-      ssize_t bytesRead = smbc_read(openFileId, buf, totalBytesToRead);
-      this->logger.Info("readFiles:Done");
-      if (bytesRead < 0) {
-        it->second.offset = -1;
-        LogErrorAndSetErrorResult("readFile:smbc_read", result);
-        return;
-      }
+      size_t bytesLeftToRead = totalBytesToRead;
 
-      it->second.offset += bytesRead;
-      if (static_cast<uint32_t>(bytesRead) != totalBytesToRead) {
-        // Invalidate the offset to be same to force a seek if this file is
-        // read again.
-        it->second.offset = -1;
-        this->logger.Error("Read mismatch: req=" +
-                           Util::ToString(totalBytesToRead) + " got=" +
-                           Util::ToString(bytesRead));
-        setErrorResult("FAILED", result);
-        return;
+      while (bytesLeftToRead > 0) {
+        // TODO(zentaro): Use min.
+        size_t bytesToRead = bytesLeftToRead < MAX_BYTES_PER_READ 
+            ? bytesLeftToRead 
+            : MAX_BYTES_PER_READ;
+
+        this->logger.Debug("readFiles: " + 
+            Util::ToString(totalBytesToRead - bytesLeftToRead) + 
+            "-" + 
+            Util::ToString(totalBytesToRead - bytesLeftToRead + bytesToRead - 1) + 
+            " of " + Util::ToString(totalBytesToRead));
+        ssize_t bytesRead = smbc_read(openFileId, buf, bytesToRead);
+        this->logger.Info("readFiles:Done");
+        if (bytesRead < 0) {
+          it->second.offset = -1;
+          LogErrorAndSetErrorResult("readFile:smbc_read", result);
+          return;
+        }
+
+        if (static_cast<uint32_t>(bytesRead) != bytesToRead) {
+          // TODO(zentaro): Does smbc_read ever do a short read?
+          // Invalidate the offset to be same to force a seek if this file is
+          // read again.
+          it->second.offset = -1;
+          this->logger.Error("Read mismatch: req=" +
+                             Util::ToString(bytesToRead) + " got=" +
+                             Util::ToString(bytesRead));
+          setErrorResult("FAILED", result);
+          return;
+        }
+
+        it->second.offset += bytesRead;
+        bytesLeftToRead -= bytesRead;
+        buf = static_cast<void*>(static_cast<uint8_t*>(buf) + bytesRead);
       }
     }
 
