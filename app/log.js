@@ -42,10 +42,8 @@ JsLogger.prototype.trace = function(operation, start, end) {
   if (traceEnabled) {
     var elapsedMs = Math.round(end - start);
     this.write_(
-        JSLOG_DEBUG,
-        'TRACE: ',
-        operation + ':' + Math.round(start) + '-' + Math.round(end) +
-            ' = ' + elapsedMs);
+        JSLOG_DEBUG, 'TRACE: ', operation + ':' + Math.round(start) + '-' +
+            Math.round(end) + ' = ' + elapsedMs);
   }
 };
 

@@ -47,8 +47,7 @@ CredStore.prototype.exists = function(fileSystemId) {
  * Adds a credential to the store. If a previous credential exists it will be
  * overwritten.
  */
-CredStore.prototype.add = function(
-    fileSystemId, domain, username, password) {
+CredStore.prototype.add = function(fileSystemId, domain, username, password) {
   this.creds[fileSystemId] = {
     domain: domain || '',
     username: username || '',

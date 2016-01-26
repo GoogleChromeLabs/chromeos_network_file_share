@@ -48,34 +48,33 @@ SambaClient.prototype.regenerateMountInfo_ = function(sharePath) {
   // that if the IP changed this mount might be stale. Alternately more complex
   // logic would be required since this gets called as soon as the machine boots
   // and network connectivity has not even been established in some cases.
-  canonicalizeSambaUrl(sharePath)
-      .then(function(result) {
-        log.debug('Looking for credentials for ' + result.canonical);
-        var creds = this.credentials.get(result.canonical);
+  canonicalizeSambaUrl(sharePath).then(function(result) {
+    log.debug('Looking for credentials for ' + result.canonical);
+    var creds = this.credentials.get(result.canonical);
 
-        var domain = '';
-        var username = '';
-        var password = '';
-        if (creds) {
-          domain = creds.domain;
-          username = creds.username;
-          password = creds.password;
-        }
+    var domain = '';
+    var username = '';
+    var password = '';
+    if (creds) {
+      domain = creds.domain;
+      username = creds.username;
+      password = creds.password;
+    }
 
-        var mountInfo = {
-            sharePath: result.canonical,
-            domain: domain,
-            user: username,
-            password: password,
-            server: result.server,
-            path: result.path,
-            share: result.share,
-            serverIP: result.serverIP
-        };
+    var mountInfo = {
+      sharePath: result.canonical,
+      domain: domain,
+      user: username,
+      password: password,
+      server: result.server,
+      path: result.path,
+      share: result.share,
+      serverIP: result.serverIP
+    };
 
-        log.debug('MountInfo regenerated for ' + sharePath);
-        resolver.resolve(mountInfo);
-      }.bind(this));
+    log.debug('MountInfo regenerated for ' + sharePath);
+    resolver.resolve(mountInfo);
+  }.bind(this));
 
   return resolver.promise;
 };
@@ -86,15 +85,17 @@ SambaClient.prototype.remountShare_ = function(fileSystem) {
   this.mounts[fileSystem.fileSystemId]['mountPromise'] = resolver.promise;
 
   this.regenerateMountInfo_(fileSystem.fileSystemId).then(function(mountInfo) {
-    this.mount_(mountInfo, false).then(function() {
-      log.debug('Remounted ' + fileSystem.fileSystemId);
-      resolver.resolve();
-    }.bind(this),
-    function(err) {
-      log.error('Remounting ' + fileSystem.fileSystemId + ' failed');
-      this.mounts[fileSystem.fileSystemId]['mountPromise'] = null;
-      resolver.reject(err);
-    }.bind(this));
+    this.mount_(mountInfo, false)
+        .then(
+            function() {
+              log.debug('Remounted ' + fileSystem.fileSystemId);
+              resolver.resolve();
+            }.bind(this),
+            function(err) {
+              log.error('Remounting ' + fileSystem.fileSystemId + ' failed');
+              this.mounts[fileSystem.fileSystemId]['mountPromise'] = null;
+              resolver.reject(err);
+            }.bind(this));
   }.bind(this));
 
   return resolver.promise;
@@ -113,16 +114,17 @@ SambaClient.prototype.populateMounts_ = function() {
         fileSystem['mountPromise'] = null;
         this.mounts[fileSystem.fileSystemId] = fileSystem;
       } else {
-        log.debug('No credentials for ' +
-            fileSystem.fileSystemId + '. Unmounting.');
+        log.debug(
+            'No credentials for ' + fileSystem.fileSystemId + '. Unmounting.');
         // Unmount the fileSystemId with the FSP.
         var unmountOptions = {fileSystemId: fileSystem.fileSystemId};
         var unmountResolver = getPromiseResolver();
         unmountPromises.push(unmountResolver.promise);
         this.fsp.unmount(unmountOptions, function() {
           if (chrome.runtime.lastError) {
-            log.error('Unmounting ' + fileSystem.fileSystemId + ' failed: ' +
-                      chrome.runtime.lastError.message);
+            log.error(
+                'Unmounting ' + fileSystem.fileSystemId + ' failed: ' +
+                chrome.runtime.lastError.message);
             unmountResolver.reject(chrome.runtime.lastError.message);
           } else {
             log.info('Unmounting ' + fileSystem.fileSystemId + ' succeeded');
@@ -136,8 +138,7 @@ SambaClient.prototype.populateMounts_ = function() {
     // When all the unmount promises from above resolve then it will resolve the
     // populate resolver.
     attachResolver(
-        joinAllIgnoringRejects(unmountPromises),
-        this.populateResolver);
+        joinAllIgnoringRejects(unmountPromises), this.populateResolver);
 
   }.bind(this));
 };
@@ -153,8 +154,9 @@ SambaClient.prototype.sendMessage_ = function(fnName, args) {
     cleansedArgs[1]['password'] = '***********';
   }
 
-  log.debug('Sending to NaCl fn=' + fnName + ' id=' + messageId + ' args=' +
-            JSON.stringify(cleansedArgs));
+  log.debug(
+      'Sending to NaCl fn=' + fnName + ' id=' + messageId + ' args=' +
+      JSON.stringify(cleansedArgs));
   if (fnName == 'mount' || fnName == 'unmount') {
     log.debug('Passing through mount/unmount messages');
     // These messages pass straight through.
@@ -183,16 +185,16 @@ SambaClient.prototype.sendMessage_ = function(fnName, args) {
       this.remountShare_(this.mounts[fileSystemId]);
     }
 
-    this.mounts[fileSystemId]['mountPromise'].then(function() {
-      log.debug('mount promise resolved. sending message to router');
-      this.router.sendMessageWithRetry(message).then(
-          resolver.resolve,
-          resolver.reject);
-    }.bind(this),
-    function(err) {
-      log.error('Trying to send message to failed mount');
-      resolver.reject('NOT_FOUND');
-    }.bind(this));
+    this.mounts[fileSystemId]['mountPromise'].then(
+        function() {
+          log.debug('mount promise resolved. sending message to router');
+          this.router.sendMessageWithRetry(message).then(
+              resolver.resolve, resolver.reject);
+        }.bind(this),
+        function(err) {
+          log.error('Trying to send message to failed mount');
+          resolver.reject('NOT_FOUND');
+        }.bind(this));
   }.bind(this));
 
   return resolver.promise;
@@ -240,7 +242,8 @@ SambaClient.prototype.mount_ = function(shareInfo, isNewMount) {
                   this.fsp.get(fileSystemId, function(fileSystem) {
                     if (chrome.runtime.lastError) {
                       log.error(
-                          'Get filesystem failed: ' + chrome.runtime.lastError.message);
+                          'Get filesystem failed: ' +
+                          chrome.runtime.lastError.message);
                       resolver.reject(chrome.runtime.lastError.message);
                     } else {
                       log.debug('get filesystem succeeded');
@@ -249,18 +252,15 @@ SambaClient.prototype.mount_ = function(shareInfo, isNewMount) {
 
                       if (shareInfo.saveCredentials) {
                         this.credentials.add(
-                            shareInfo.sharePath,
-                            shareInfo.domain,
-                            shareInfo.user,
-                            shareInfo.password);
+                            shareInfo.sharePath, shareInfo.domain,
+                            shareInfo.user, shareInfo.password);
                         log.info('saving credentials');
-                        this.credentials.save().then(function() {
-                          log.info('Saving credentials succeeded');
-                          resolver.resolve();
-                        }.bind(this),
-                        function(err) {
-                          resolver.reject(err);
-                        });
+                        this.credentials.save().then(
+                            function() {
+                              log.info('Saving credentials succeeded');
+                              resolver.resolve();
+                            }.bind(this),
+                            function(err) { resolver.reject(err); });
                       } else {
                         log.info('Not saving credentials for this mount');
                         resolver.resolve();
@@ -282,15 +282,15 @@ SambaClient.prototype.mount_ = function(shareInfo, isNewMount) {
   return resolver.promise;
 };
 
-SambaClient.prototype.noParamsHandler_ = function(functionName, options,
-                                                  successFn, errorFn) {
+SambaClient.prototype.noParamsHandler_ = function(
+    functionName, options, successFn, errorFn) {
   log.debug('Calling ' + functionName);
 
   this.sendMessage_(functionName, [options])
       .then(
           function(response) {
-            log.debug(functionName +
-                      ' promise resolved. Calling success callback.');
+            log.debug(
+                functionName + ' promise resolved. Calling success callback.');
             successFn();
           },
           function(err) {
@@ -317,8 +317,8 @@ SambaClient.prototype.unmount = function(options, successFn, errorFn) {
             // and ignore failure on samba side. It should never fail anyway.
             this.fsp.unmount(unmountOptions, function() {
               if (chrome.runtime.lastError) {
-                log.error('Unmount failed: ' +
-                          chrome.runtime.lastError.message);
+                log.error(
+                    'Unmount failed: ' + chrome.runtime.lastError.message);
                 errorFn();
               } else {
                 log.info('Unmount succeeded');
@@ -337,8 +337,8 @@ SambaClient.prototype.unmount = function(options, successFn, errorFn) {
   return resolver.promise;
 };
 
-SambaClient.prototype.getMetadataHandler = function(options, successFn,
-                                                    errorFn) {
+SambaClient.prototype.getMetadataHandler = function(
+    options, successFn, errorFn) {
   log.debug('getMetadataHandler called');
   var cachedEntry = this.metadataCache.lookupMetadata(
       options.fileSystemId, options.entryPath);
@@ -385,8 +385,8 @@ SambaClient.prototype.getMetadataHandler = function(options, successFn,
           });
 };
 
-SambaClient.prototype.readDirectoryHandler = function(options, successFn,
-                                                      errorFn) {
+SambaClient.prototype.readDirectoryHandler = function(
+    options, successFn, errorFn) {
   log.debug('readDirectoryHandler called');
 
   this.sendMessage_('readDirectory', [options])
@@ -404,8 +404,7 @@ SambaClient.prototype.readDirectoryHandler = function(options, successFn,
             console.log(response.result.value);
 
             this.metadataCache.cacheDirectoryContents(
-                options.fileSystemId,
-                options.directoryPath,
+                options.fileSystemId, options.directoryPath,
                 response.result.value);
 
             // NOTE: If this ever supports hasMore the way the caching is done
@@ -451,19 +450,19 @@ SambaClient.prototype.readFileHandler = function(options, successFn, errorFn) {
           });
 };
 
-SambaClient.prototype.createDirectoryHandler = function(options, successFn,
-                                                        errorFn) {
+SambaClient.prototype.createDirectoryHandler = function(
+    options, successFn, errorFn) {
   this.noParamsHandler_('createDirectory', options, successFn, errorFn);
 };
 
-SambaClient.prototype.deleteEntryHandler = function(options, successFn,
-                                                    errorFn) {
+SambaClient.prototype.deleteEntryHandler = function(
+    options, successFn, errorFn) {
   this.metadataCache.invalidateEntry(options.fileSystemId, options.entryPath);
   this.noParamsHandler_('deleteEntry', options, successFn, errorFn);
 };
 
-SambaClient.prototype.createFileHandler = function(options, successFn,
-                                                   errorFn) {
+SambaClient.prototype.createFileHandler = function(
+    options, successFn, errorFn) {
   this.noParamsHandler_('createFile', options, successFn, errorFn);
 };
 

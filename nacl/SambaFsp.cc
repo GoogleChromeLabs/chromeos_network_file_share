@@ -13,13 +13,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "SambaFsp.h"
 #include <errno.h>
 #include <stdio.h>
-#include "SambaFsp.h"
-#include "util.h"
 #include "ppapi/cpp/var.h"
-#include "ppapi/cpp/var_dictionary.h"
 #include "ppapi/cpp/var_array_buffer.h"
+#include "ppapi/cpp/var_dictionary.h"
+#include "util.h"
 
 namespace NaclFsp {
 
@@ -357,9 +357,8 @@ void SambaFsp::openFile(const OpenFileOptions& options,
 
 void SambaFsp::readFile(const ReadFileOptions& options,
                         pp::VarDictionary* result) {
-  this->logger.Info(
-      "readFile: " + Util::ToString(options.openRequestId) + "@" +
-      Util::ToString(options.offset));
+  this->logger.Info("readFile: " + Util::ToString(options.openRequestId) + "@" +
+                    Util::ToString(options.offset));
 
   std::map<int, OpenFileInfo>::iterator it =
       this->openFiles.find(options.openRequestId);
@@ -415,9 +414,9 @@ void SambaFsp::readFile(const ReadFileOptions& options,
         // Invalidate the offset to be same to force a seek if this file is
         // read again.
         it->second.offset = -1;
-        this->logger.Error("Read mismatch: req=" + 
-            Util::ToString(totalBytesToRead) +
-            " got=" + Util::ToString(bytesRead));
+        this->logger.Error("Read mismatch: req=" +
+                           Util::ToString(totalBytesToRead) + " got=" +
+                           Util::ToString(bytesRead));
         setErrorResult("FAILED", result);
         return;
       }
@@ -722,9 +721,8 @@ void SambaFsp::truncate(const TruncateOptions& options,
 
 void SambaFsp::writeFile(const WriteFileOptions& options,
                          pp::VarDictionary* result) {
-  this->logger.Info(
-      "writeFile: " + Util::ToString(options.openRequestId) + "@" +
-      Util::ToString(options.offset));
+  this->logger.Info("writeFile: " + Util::ToString(options.openRequestId) +
+                    "@" + Util::ToString(options.offset));
 
   std::map<int, OpenFileInfo>::iterator it =
       this->openFiles.find(options.openRequestId);
@@ -742,9 +740,8 @@ void SambaFsp::writeFile(const WriteFileOptions& options,
           smbc_lseek(openFileId, static_cast<off_t>(options.offset), SEEK_SET);
       if ((actualOffset < 0) || (actualOffset != options.offset)) {
         it->second.offset = -1;
-        this->logger.Debug(
-            "writeFile: Unexpected offset after seek " +
-            Util::ToString(actualOffset));
+        this->logger.Debug("writeFile: Unexpected offset after seek " +
+                           Util::ToString(actualOffset));
         this->LogErrorAndSetErrorResult("writeFile:smbc_lseek", result);
         return;
       }

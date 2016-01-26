@@ -62,8 +62,9 @@ function onMountClicked() {
   canonicalizeSambaUrl(sharePath, resolveFileShareHostName)
       .then(
           function(result) {
-            log.info('Got server=' + result.server + ' share=' + result.share +
-                     ' path=' + result.path);
+            log.info(
+                'Got server=' + result.server + ' share=' + result.share +
+                ' path=' + result.path);
             log.info('Canonical=' + result.canonical);
 
             var message = {

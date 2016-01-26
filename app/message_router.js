@@ -51,8 +51,8 @@ MessageRouter.prototype.sendMessage = function(message) {
   }
 
   //// Uncomment these and comment line below to enable some timing traces.
-  //var operation = message.functionName + '[' + messageId + ']';
-  //this.messages[messageId] = getTimedPromiseResolver(operation);
+  // var operation = message.functionName + '[' + messageId + ']';
+  // this.messages[messageId] = getTimedPromiseResolver(operation);
   this.messages[messageId] = getPromiseResolver();
 
   // Always make sure initialization is complete before sending messages.

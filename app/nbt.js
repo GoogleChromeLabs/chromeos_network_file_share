@@ -59,8 +59,8 @@ function resolveFileShareHostName(hostName) {
               }
             },
             function(err) {
-              log.error('getFileSharesOnInterface promise rejected with ' +
-                        err);
+              log.error(
+                  'getFileSharesOnInterface promise rejected with ' + err);
               promisesRemaining--;
               if (promisesRemaining <= 0) {
                 resolver.resolve(ipAddresses);
@@ -102,8 +102,9 @@ function parseNameResponsePacket(arrayBuffer) {
   reader.skip32();  // Ignore TTL
   var addressListByteCount = reader.readUint16();
 
-  log.debug('packet size = ' + arrayBuffer.byteLength + ' bytes more=' +
-            addressListByteCount);
+  log.debug(
+      'packet size = ' + arrayBuffer.byteLength + ' bytes more=' +
+      addressListByteCount);
 
   // TODO(zentaro): Check how many bytes are left in the buffer vs value above.
   var addressListEntryCount = reader.readUint8();
@@ -136,14 +137,14 @@ function parseNameResponsePacket(arrayBuffer) {
 }
 
 function getNameTypesFromResponse(arrayBuffer, desiredTypes, opt_name) {
-  return parseNameResponsePacket(arrayBuffer)
-      .filter(function(nameInfo) {
-        var typeMatches = ((desiredTypes.length == 0) ||
-                           (desiredTypes.indexOf(nameInfo.type) >= 0));
-        var nameMatches = ((opt_name == undefined) ||
-                           (opt_name.toUpperCase() == nameInfo.name));
-        return typeMatches && nameMatches;
-      });
+  return parseNameResponsePacket(arrayBuffer).filter(function(nameInfo) {
+    var typeMatches =
+        ((desiredTypes.length == 0) ||
+         (desiredTypes.indexOf(nameInfo.type) >= 0));
+    var nameMatches =
+        ((opt_name == undefined) || (opt_name.toUpperCase() == nameInfo.name));
+    return typeMatches && nameMatches;
+  });
 }
 
 function createNameQueryPacket() {
@@ -197,8 +198,8 @@ function getFileSharesOnInterface(broadcastAddress, opt_name) {
   // https://tools.ietf.org/html/rfc1002
   // Query is section 4.2.12
   //
-  log.info('Looking for name [' + opt_name + '] at broadcast ' +
-           broadcastAddress);
+  log.info(
+      'Looking for name [' + opt_name + '] at broadcast ' + broadcastAddress);
   var resolver = getPromiseResolver();
 
   var buf = createNameQueryPacket();
@@ -225,8 +226,9 @@ function getFileSharesOnInterface(broadcastAddress, opt_name) {
 
     getNameTypesFromResponse(info.data, [0x20], opt_name)
         .forEach(function(nameInfo) {
-          log.info('FOUND FILE SHARE: ' + nameInfo.name + '[' +
-                   info.remoteAddress + ']');
+          log.info(
+              'FOUND FILE SHARE: ' + nameInfo.name + '[' + info.remoteAddress +
+              ']');
           nameInfo['ipAddress'] = info.remoteAddress;
           nameLookup[nameInfo.name] = nameInfo;
 

@@ -14,10 +14,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "BaseNaclFsp.h"
-#include "util.h"
 #include "ppapi/cpp/var.h"
 #include "ppapi/cpp/var_array_buffer.h"
 #include "ppapi/cpp/var_dictionary.h"
+#include "util.h"
 
 #include "ppapi_simple/ps.h"
 #include "ppapi_simple/ps_interface.h"

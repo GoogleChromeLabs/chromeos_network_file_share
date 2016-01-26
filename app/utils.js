@@ -37,13 +37,9 @@ var getPromiseResolver = function() {
 var getTimeoutResolver = function(timeoutMs) {
   var resolver = getPromiseResolver();
 
-  var timeout = setTimeout(function() {
-    resolver.reject();
-  }, timeoutMs);
+  var timeout = setTimeout(function() { resolver.reject(); }, timeoutMs);
 
-  thenAlways(resolver.promise, function() {
-    clearTimeout(timeout);
-  });
+  thenAlways(resolver.promise, function() { clearTimeout(timeout); });
 
   return resolver;
 };
@@ -60,8 +56,7 @@ var getTimeoutResolver = function(timeoutMs) {
 // or it would cause a failure. The logic here will only retry when that is
 // the error and in the terminating case will replace that error with a generic
 // 'FAILED'.
-var getRetryingPromise = function(
-      promiseFn, operationName, attemptCount) {
+var getRetryingPromise = function(promiseFn, operationName, attemptCount) {
   if (attemptCount <= 0) {
     log.error('No attempt made for ' + operationName);
     return Promise.reject('FAILED');
@@ -73,35 +68,33 @@ var getRetryingPromise = function(
   // Declare outside since it is called recursively within the function.
   var retryFn;
   retryFn = function(err) {
-      attempts++;
-      if (attempts >= attemptCount) {
-        log.error(operationName + ' failed on attempt ' + attempts + ' of ' +
-            attemptCount + '. Retrying...');
-        if (err == 'SHOULD_RETRY') {
-          err = 'FAILED';
-        }
-
-        resolver.reject(err);
-      } else {
-        // There are still more attempts so try again if it is retryable.
-        if (err == 'SHOULD_RETRY') {
-          log.warning(operationName + ' failed on attempt ' + attempts +
-              ' of ' + attemptCount + '. Retrying...');
-
-          promiseFn().then(
-              resolver.resolve,
-              retryFn);
-        } else {
-          // Non retry errors should just be passed through.
-          resolver.reject(err);
-        }
+    attempts++;
+    if (attempts >= attemptCount) {
+      log.error(
+          operationName + ' failed on attempt ' + attempts + ' of ' +
+          attemptCount + '. Retrying...');
+      if (err == 'SHOULD_RETRY') {
+        err = 'FAILED';
       }
-    };
+
+      resolver.reject(err);
+    } else {
+      // There are still more attempts so try again if it is retryable.
+      if (err == 'SHOULD_RETRY') {
+        log.warning(
+            operationName + ' failed on attempt ' + attempts + ' of ' +
+            attemptCount + '. Retrying...');
+
+        promiseFn().then(resolver.resolve, retryFn);
+      } else {
+        // Non retry errors should just be passed through.
+        resolver.reject(err);
+      }
+    }
+  };
 
   // Make the first attempt.
-  promiseFn().then(
-      resolver.resolve,
-      retryFn);
+  promiseFn().then(resolver.resolve, retryFn);
 
   return resolver.promise;
 };
@@ -152,22 +145,7 @@ function lshift(num, bits) {
 }
 
 var hexChar = [
-  '0',
-  '1',
-  '2',
-  '3',
-  '4',
-  '5',
-  '6',
-  '7',
-  '8',
-  '9',
-  'A',
-  'B',
-  'C',
-  'D',
-  'E',
-  'F'
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
 ];
 
 function byteToHex(b) {
@@ -222,14 +200,11 @@ function joinAllIgnoringRejects(promiseList) {
   // Iterate over each promise. For the ones that resolve, put the value into
   // resultList. Each resolve or reject decrements a counter, then resolves the
   // outer promise when all promises have been fulfilled.
-  promiseList.forEach(
-      function(promise) {
-        promise = promise.then(
-            function(result) {
-              resultList.push(result);
-            }, function() {});
-        thenAlways(promise, onFulfilled);
-      });
+  promiseList.forEach(function(promise) {
+    promise = promise.then(
+        function(result) { resultList.push(result); }, function() {});
+    thenAlways(promise, onFulfilled);
+  });
 
   return resolver.promise;
 }

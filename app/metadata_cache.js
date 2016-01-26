@@ -111,20 +111,14 @@ MetadataCache.prototype.getDirectoryCache_ = function(fileSystemId, pathParts) {
 MetadataCache.prototype.splitEntryPath_ = function(entryPath) {
   // TODO(zentaro): Can simplify.
   if (entryPath == '/') {
-    return {
-      'path': '/',
-      'name': ''
-    };
+    return {'path': '/', 'name': ''};
   }
 
   var slashAt = entryPath.lastIndexOf('/');
   if (slashAt == -1) {
     return null;
   } else if (slashAt == 0) {
-    return {
-      'path': '/',
-      'name': entryPath.substring(1)
-    };
+    return {'path': '/', 'name': entryPath.substring(1)};
   } else {
     return {
       'path': entryPath.substring(0, slashAt),

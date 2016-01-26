@@ -27,8 +27,8 @@ function ipv4ToUint32(ipv4) {
 
   // TODO(zentaro): Handle the case where the parts are outside 0-255.
   return lshift(parseInt(parts[0], 10), 24) +
-         lshift(parseInt(parts[1], 10), 16) +
-         lshift(parseInt(parts[2], 10), 8) + parseInt(parts[3], 10);
+      lshift(parseInt(parts[1], 10), 16) + lshift(parseInt(parts[2], 10), 8) +
+      parseInt(parts[3], 10);
 }
 
 /**
@@ -36,9 +36,9 @@ function ipv4ToUint32(ipv4) {
  */
 function uint32ToIpv4(ipIntValue) {
   return ((ipIntValue >>> 24) & 0xff).toString() + '.' +
-         ((ipIntValue >>> 16) & 0xff).toString() + '.' +
-         ((ipIntValue >>> 8) & 0xff).toString() + '.' +
-         (ipIntValue & 0xff).toString();
+      ((ipIntValue >>> 16) & 0xff).toString() + '.' +
+      ((ipIntValue >>> 8) & 0xff).toString() + '.' +
+      (ipIntValue & 0xff).toString();
 }
 
 /**

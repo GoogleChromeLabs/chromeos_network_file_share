@@ -13,8 +13,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <stdio.h>
 #include "Logger.h"
+#include <stdio.h>
 #include "ppapi/cpp/var.h"
 
 #include "ppapi_simple/ps.h"
@@ -23,7 +23,7 @@
 namespace NaclFsp {
 
 Logger::Logger() {
-  //JavaScriptLogLevel = Logger::WARNING;
+  // JavaScriptLogLevel = Logger::WARNING;
   JavaScriptLogLevel = Logger::DEBUG;
 
   // TODO(zentaro): Probably make INFO by release time.

@@ -53,8 +53,9 @@ function closeUdpSocket(socketId) {
   if (socketId != undefined) {
     chrome.sockets.udp.close(socketId, function() {
       if (chrome.runtime.lastError) {
-        log.error('Error closing socket ' + socketId + ': ' +
-                  chrome.runtime.lastError.message);
+        log.error(
+            'Error closing socket ' + socketId + ': ' +
+            chrome.runtime.lastError.message);
       } else {
         log.debug('Socket ' + socketId + ' closed');
       }
