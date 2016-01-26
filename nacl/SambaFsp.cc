@@ -391,18 +391,18 @@ void SambaFsp::readFile(const ReadFileOptions& options,
     this->logger.Info("readFiles: lengthAtOpen=" +
                       Util::ToString(lengthAtOpen));
     uint32_t remainingLength = lengthAtOpen - options.offset;
-    uint32_t bytesToRead =
+    uint32_t totalBytesToRead =
         remainingLength < options.length ? remainingLength : options.length;
 
     this->logger.Info("readFiles req=" + Util::ToString(options.length) +
-                      " reading=" + Util::ToString(bytesToRead));
-    pp::VarArrayBuffer buffer(bytesToRead);
+                      " reading=" + Util::ToString(totalBytesToRead));
+    pp::VarArrayBuffer buffer(totalBytesToRead);
 
     // Don't read 0 bytes or the API will complain. Just return the empty
     // VarArrayBuffer.
-    if (bytesToRead > 0) {
+    if (totalBytesToRead > 0) {
       void* buf = static_cast<void*>(buffer.Map());
-      ssize_t bytesRead = smbc_read(openFileId, buf, bytesToRead);
+      ssize_t bytesRead = smbc_read(openFileId, buf, totalBytesToRead);
       this->logger.Info("readFiles:Done");
       if (bytesRead < 0) {
         it->second.offset = -1;
@@ -411,12 +411,13 @@ void SambaFsp::readFile(const ReadFileOptions& options,
       }
 
       it->second.offset += bytesRead;
-      if (static_cast<uint32_t>(bytesRead) != bytesToRead) {
+      if (static_cast<uint32_t>(bytesRead) != totalBytesToRead) {
         // Invalidate the offset to be same to force a seek if this file is
         // read again.
         it->second.offset = -1;
-        this->logger.Error("Read mismatch: req=" + Util::ToString(bytesToRead) +
-                           " got=" + Util::ToString(bytesRead));
+        this->logger.Error("Read mismatch: req=" + 
+            Util::ToString(totalBytesToRead) +
+            " got=" + Util::ToString(bytesRead));
         setErrorResult("FAILED", result);
         return;
       }
