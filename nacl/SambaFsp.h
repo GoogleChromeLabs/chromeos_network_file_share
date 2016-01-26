@@ -50,6 +50,7 @@ class OpenFileInfo {
  public:
   int sambaFileId;
   size_t lengthAtOpen;
+  off_t offset;
   OpenFileMode mode;
 };
 

@@ -349,6 +349,7 @@ void SambaFsp::openFile(const OpenFileOptions& options,
   OpenFileInfo fileInfo;
   fileInfo.sambaFileId = openFileId;
   fileInfo.lengthAtOpen = statInfo.st_size;
+  fileInfo.offset = 0;
   fileInfo.mode = options.mode;
 
   this->openFiles[options.requestId] = fileInfo;
@@ -356,8 +357,11 @@ void SambaFsp::openFile(const OpenFileOptions& options,
 
 void SambaFsp::readFile(const ReadFileOptions& options,
                         pp::VarDictionary* result) {
-  this->logger.Info("readFile: " + Util::ToString(options.openRequestId));
-  std::map<int, OpenFileInfo>::const_iterator it =
+  this->logger.Info(
+      "readFile: " + Util::ToString(options.openRequestId) + "@" +
+      Util::ToString(options.offset));
+
+  std::map<int, OpenFileInfo>::iterator it =
       this->openFiles.find(options.openRequestId);
 
   if (it != this->openFiles.end()) {
@@ -366,18 +370,22 @@ void SambaFsp::readFile(const ReadFileOptions& options,
     // TODO(zentaro): API with >2GB file size???
     int openFileId = it->second.sambaFileId;
     int lengthAtOpen = it->second.lengthAtOpen;
+    off_t actualOffset = it->second.offset;
 
-    // TODO(zentaro): Check the returned offset is correct?
-    off_t actualOffset =
-        smbc_lseek(openFileId, static_cast<int>(options.offset), SEEK_SET);
-    if (actualOffset < 0) {
-      this->LogErrorAndSetErrorResult("readFile:smbc_lseek", result);
-      return;
-    }
+    if ((actualOffset < 0) || (actualOffset != options.offset)) {
+      actualOffset =
+          smbc_lseek(openFileId, static_cast<int>(options.offset), SEEK_SET);
+      if ((actualOffset < 0) || (actualOffset != options.offset)) {
+        this->LogErrorAndSetErrorResult("readFile:smbc_lseek", result);
+        return;
+      }
 
-    if (actualOffset != options.offset) {
-      setErrorResult("FAILED", result);
-      return;
+      if (actualOffset != options.offset) {
+        setErrorResult("FAILED", result);
+        return;
+      }
+    } else {
+      this->logger.Debug("readFiles: Skipped redundant seek");
     }
 
     this->logger.Info("readFiles: lengthAtOpen=" +
@@ -397,11 +405,16 @@ void SambaFsp::readFile(const ReadFileOptions& options,
       ssize_t bytesRead = smbc_read(openFileId, buf, bytesToRead);
       this->logger.Info("readFiles:Done");
       if (bytesRead < 0) {
+        it->second.offset = -1;
         LogErrorAndSetErrorResult("readFile:smbc_read", result);
         return;
       }
 
+      it->second.offset += bytesRead;
       if (static_cast<uint32_t>(bytesRead) != bytesToRead) {
+        // Invalidate the offset to be same to force a seek if this file is
+        // read again.
+        it->second.offset = -1;
         this->logger.Error("Read mismatch: req=" + Util::ToString(bytesToRead) +
                            " got=" + Util::ToString(bytesRead));
         setErrorResult("FAILED", result);
@@ -708,7 +721,11 @@ void SambaFsp::truncate(const TruncateOptions& options,
 
 void SambaFsp::writeFile(const WriteFileOptions& options,
                          pp::VarDictionary* result) {
-  std::map<int, OpenFileInfo>::const_iterator it =
+  this->logger.Info(
+      "writeFile: " + Util::ToString(options.openRequestId) + "@" +
+      Util::ToString(options.offset));
+
+  std::map<int, OpenFileInfo>::iterator it =
       this->openFiles.find(options.openRequestId);
 
   if (it != this->openFiles.end()) {
@@ -716,23 +733,34 @@ void SambaFsp::writeFile(const WriteFileOptions& options,
     // TODO(zentaro): Check buffer size.
     // TODO(zentaro): API with >2GB file size???
     int openFileId = it->second.sambaFileId;
+    off_t actualOffset = it->second.offset;
 
-    // TODO(zentaro): Check the returned offset is correct?
-    // TODO(zentaro): What to do if past EOF?
-    off_t actualOffset =
-        smbc_lseek(openFileId, static_cast<off_t>(options.offset), SEEK_SET);
-    if (actualOffset < 0) {
-      this->LogErrorAndSetErrorResult("writeFile:smbc_lseek", result);
-      return;
+    if ((actualOffset < 0) || (actualOffset != options.offset)) {
+      // TODO(zentaro): What happens after EOF?
+      actualOffset =
+          smbc_lseek(openFileId, static_cast<off_t>(options.offset), SEEK_SET);
+      if ((actualOffset < 0) || (actualOffset != options.offset)) {
+        it->second.offset = -1;
+        this->logger.Debug(
+            "writeFile: Unexpected offset after seek " +
+            Util::ToString(actualOffset));
+        this->LogErrorAndSetErrorResult("writeFile:smbc_lseek", result);
+        return;
+      }
+    } else {
+      this->logger.Debug("writeFile: Skipping redundant seek");
     }
 
     uint32_t length = static_cast<uint32_t>(options.length);
     if (length > 0) {
       // Doesn't seem to like it when it is zero length.
       if (smbc_write(openFileId, options.data, length) < 0) {
+        it->second.offset = -1;
         this->LogErrorAndSetErrorResult("writeFile:smbc_write", result);
         return;
       }
+
+      it->second.offset += length;
     }
   } else {
     this->logger.Error("Invalid FD");
