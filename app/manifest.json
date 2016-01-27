@@ -2,8 +2,9 @@
   "manifest_version": 2,
 
   "name": "Network File Share for Chrome OS",
+  "short_name": "Network File Share",
   "description": "Access your network file shares directly from the Chrome OS files app.",
-  "version": "0.33.16025",
+  "version": "0.40.16026",
   "author": "Zentaro Kavanagh",
   "icons": {
     "128": "icon128.png"
