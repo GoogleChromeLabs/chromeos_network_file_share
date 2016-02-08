@@ -123,14 +123,18 @@ void BaseNaclFsp::HandleMessage(pp::Var var_message) {
       return;
     }
 
-    // TODO(zentaro): Helper method.
-    pp::VarDictionary response;
-    response.Set(pp::Var("functionName"), functionName);
-    response.Set(pp::Var("messageId"), messageId);
-    response.Set(pp::Var("result"), result);
-
-    PSInterfaceMessaging()->PostMessage(PSGetInstanceId(), response.pp_var());
+    this->sendMessage(functionName, messageId, result, false);
   }
+}
+
+void BaseNaclFsp::sendMessage(const std::string& functionName, int messageId, const pp::VarDictionary& result, bool hasMore) {
+  pp::VarDictionary response;
+  response.Set(pp::Var("functionName"), functionName);
+  response.Set(pp::Var("messageId"), messageId);
+  response.Set(pp::Var("result"), result);
+  response.Set(pp::Var("hasMore"), hasMore);
+
+  PSInterfaceMessaging()->PostMessage(PSGetInstanceId(), response.pp_var());
 }
 
 void BaseNaclFsp::setEntryMetadata(const EntryMetadata& entry,

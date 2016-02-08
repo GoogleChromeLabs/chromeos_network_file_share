@@ -172,7 +172,7 @@ SambaClient.prototype.sendMessage_ = function(fnName, args) {
 
     // It's possible that a message gets sent very early after boot before all
     // the persisted mounts have been remounted or unmounted if there are no
-    // saved credentials. If it was unmounted while waithing for the populate
+    // saved credentials. If it was unmounted while waiting for the populate
     // resolver then we just fail here.
     if (!fileSystem) {
       resolver.reject('NOT_FOUND');
@@ -389,29 +389,33 @@ SambaClient.prototype.readDirectoryHandler = function(
     options, successFn, errorFn) {
   log.debug('readDirectoryHandler called');
 
+  var processDataFn = function(response) {
+    log.info('readDirectory succeeded');
+
+    // Convert the date types to be dates from string
+    response.result.value = response.result.value.map(function(elem) {
+      elem.modificationTime = new Date(elem.modificationTime * 1000);
+
+      return elem;
+    });
+
+    console.log(response.result.value);
+
+    this.metadataCache.cacheDirectoryContents(
+        options.fileSystemId, options.directoryPath,
+        response.result.value);
+
+    // NOTE: If this ever supports hasMore the way the caching is done
+    // must also change to avoid overwriting with each batch.
+    var hasMore = false;
+    successFn(response.result.value, hasMore);
+  }.bind(this);
+
+  // TODO(zentaro): Support passing processDataFn to the sendMessage_
+  // function for streaming.
   this.sendMessage_('readDirectory', [options])
       .then(
-          function(response) {
-            log.info('readDirectory succeeded');
-
-            // Convert the date types to be dates from string
-            response.result.value = response.result.value.map(function(elem) {
-              elem.modificationTime = new Date(elem.modificationTime * 1000);
-
-              return elem;
-            });
-
-            console.log(response.result.value);
-
-            this.metadataCache.cacheDirectoryContents(
-                options.fileSystemId, options.directoryPath,
-                response.result.value);
-
-            // NOTE: If this ever supports hasMore the way the caching is done
-            // must also change to avoid overwriting with each batch.
-            var hasMore = false;
-            successFn(response.result.value, hasMore);
-          }.bind(this),
+          processDataFn,
           function(err) {
             log.error('readDirectory failed with ' + err);
 
