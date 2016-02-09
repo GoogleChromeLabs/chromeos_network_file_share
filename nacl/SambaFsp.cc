@@ -298,7 +298,7 @@ std::string SambaFsp::createCredentialLookupKey(
   return host + "$$$" + mountConfig.share;
 }
 
-void SambaFsp::readDirectory(const ReadDirectoryOptions& options,
+bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
                              pp::VarDictionary* result) {
   this->logger.Info("readDirectory: " + options.directoryPath);
   std::vector<EntryMetadata> entries;
@@ -311,13 +311,19 @@ void SambaFsp::readDirectory(const ReadDirectoryOptions& options,
 
   this->logger.Info("readDirectory: " + fullPath);
   if (!this->readDirectoryEntries(fullPath, &entries, result)) {
-    // Parent already set and logged any error.
-    return;
+    // Parent already set and logged any error but did not send it.
+    // Returning false tells the caller to send the result.
+    return false;
   }
 
   this->populateStatInfo(fullPath, &entries);
   this->setResultFromEntryMetadataArray(entries, result);
   this->logger.Debug("readDirectory: COMPLETE " + fullPath);
+
+  // TODO(zentaro): Implement streaming and return true on success
+  // to indicate that all messages were already sent through the
+  // stream (and that 'result' can be discarded).
+  return false;
 }
 
 void SambaFsp::openFile(const OpenFileOptions& options,

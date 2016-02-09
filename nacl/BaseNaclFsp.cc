@@ -59,6 +59,7 @@ void BaseNaclFsp::HandleMessage(pp::Var var_message) {
     pp::VarArray args(message.Get("args"));
     pp::VarDictionary optionsDict(args.Get(0));
     pp::VarDictionary result;
+    bool resultsAlreadySent = false;
 
     // TODO(zentaro): Turn this into a map to function pointers. At the
     // least reorder by most used.
@@ -75,7 +76,7 @@ void BaseNaclFsp::HandleMessage(pp::Var var_message) {
     } else if (functionName == "readDirectory") {
       ReadDirectoryOptions options;
       options.Set(optionsDict);
-      this->readDirectory(options, &result);
+      resultsAlreadySent = this->readDirectory(options, messageId, &result);
     } else if (functionName == "openFile") {
       OpenFileOptions options;
       options.Set(optionsDict);
@@ -125,7 +126,11 @@ void BaseNaclFsp::HandleMessage(pp::Var var_message) {
       return;
     }
 
-    this->sendMessage(functionName, messageId, result, false);
+    // Successfully streamed messages have already sent all
+    // needed messages.
+    if (!resultsAlreadySent) {
+      this->sendMessage(functionName, messageId, result, false);
+    }
   }
 }
 
