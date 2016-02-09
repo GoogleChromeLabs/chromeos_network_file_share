@@ -395,8 +395,8 @@ void SambaFsp::readFile(const ReadFileOptions& options,
     // is restricted to the number of remaining bytes in the file.
     // TODO(zentaro): Use min.
     uint32_t remainingFileLength = lengthAtOpen - options.offset;
-    uint32_t totalBytesToRead = remainingFileLength < options.length 
-        ? remainingFileLength 
+    uint32_t totalBytesToRead = remainingFileLength < options.length
+        ? remainingFileLength
         : options.length;
 
     this->logger.Info("readFiles req=" + Util::ToString(options.length) +
@@ -412,14 +412,14 @@ void SambaFsp::readFile(const ReadFileOptions& options,
 
       while (bytesLeftToRead > 0) {
         // TODO(zentaro): Use min.
-        size_t bytesToRead = bytesLeftToRead < MAX_BYTES_PER_READ 
-            ? bytesLeftToRead 
+        size_t bytesToRead = bytesLeftToRead < MAX_BYTES_PER_READ
+            ? bytesLeftToRead
             : MAX_BYTES_PER_READ;
 
-        this->logger.Debug("readFiles: " + 
-            Util::ToString(totalBytesToRead - bytesLeftToRead) + 
-            "-" + 
-            Util::ToString(totalBytesToRead - bytesLeftToRead + bytesToRead - 1) + 
+        this->logger.Debug("readFiles: " +
+            Util::ToString(totalBytesToRead - bytesLeftToRead) +
+            "-" +
+            Util::ToString(totalBytesToRead - bytesLeftToRead + bytesToRead - 1) +
             " of " + Util::ToString(totalBytesToRead));
         ssize_t bytesRead = smbc_read(openFileId, buf, bytesToRead);
         this->logger.Info("readFiles:Done");
@@ -622,7 +622,7 @@ bool SambaFsp::readDirectoryEntriesLite(const std::string dirFullPath,
   int bufferSize = 1024 * 32;
   unsigned char* dirBuf = new unsigned char[bufferSize];
   int itemCount = 0;
-  int bytesRemaining = 0;  
+  int bytesRemaining = 0;
 
   while ((bytesRemaining = smbc_getdents(
               dirId, reinterpret_cast<struct smbc_dirent*>(dirBuf),
@@ -662,7 +662,7 @@ bool SambaFsp::readDirectoryEntriesLite(const std::string dirFullPath,
 
       // Advance in the buffer by dirent->dirlen
       dirent = reinterpret_cast<struct smbc_dirent*>(
-          reinterpret_cast<uint8_t*>(dirent) + dirent->dirlen);      
+          reinterpret_cast<uint8_t*>(dirent) + dirent->dirlen);
     }
   }
 
@@ -675,7 +675,7 @@ bool SambaFsp::readDirectoryEntriesLite(const std::string dirFullPath,
 
   delete[] dirBuf;
   smbc_closedir(dirId);
-  return success;  
+  return success;
 }
 
 bool SambaFsp::readDirectoryEntries(const std::string dirFullPath,
@@ -687,6 +687,13 @@ bool SambaFsp::readDirectoryEntries(const std::string dirFullPath,
     return false;
   }
 
+  this->populateStatInfo(dirFullPath, entries);
+  this->logger.Debug("readDirectory: COMPLETE " + dirFullPath);
+  return true;
+}
+
+void SambaFsp::populateStatInfo(const std::string dirFullPath,
+                                    std::vector<EntryMetadata>* entries) {
   this->logger.Debug("readDirectory: Populating stat's(). EntryCount=" + Util::ToString(entries->size()));
 
   // TODO(zentaro): Find a way do in parallel or batches.
@@ -700,11 +707,8 @@ bool SambaFsp::readDirectoryEntries(const std::string dirFullPath,
     } else {
       it->size = statInfo.st_size;
       it->modificationTime = statInfo.st_mtime;
-    }    
+    }
   }
-
-  this->logger.Debug("readDirectory: COMPLETE " + dirFullPath);
-  return true;
 }
 
 void SambaFsp::moveEntry(const MoveEntryOptions& options,
