@@ -576,7 +576,7 @@ bool SambaFsp::deleteDirectoryContentsRecursive(const std::string& dirFullPath,
                                                 pp::VarDictionary* result) {
   std::vector<EntryMetadata> entries;
 
-  if (!readDirectoryEntries(dirFullPath, &entries, result)) {
+  if (!readDirectoryEntriesLite(dirFullPath, &entries, result)) {
     return false;
   }
 
