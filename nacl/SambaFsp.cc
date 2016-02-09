@@ -309,11 +309,15 @@ void SambaFsp::readDirectory(const ReadDirectoryOptions& options,
   std::string fullPath =
       getFullPathFromRelativePath(options.fileSystemId, relativePath);
 
-  if (!readDirectoryEntries(fullPath, &entries, result)) {
+  this->logger.Info("readDirectory: " + fullPath);
+  if (!this->readDirectoryEntriesLite(fullPath, &entries, result)) {
+    // Parent already set and logged any error.
     return;
   }
 
+  this->populateStatInfo(fullPath, &entries);
   this->setResultFromEntryMetadataArray(entries, result);
+  this->logger.Debug("readDirectory: COMPLETE " + fullPath);
 }
 
 void SambaFsp::openFile(const OpenFileOptions& options,
@@ -608,7 +612,7 @@ bool SambaFsp::deleteDirectoryContentsRecursive(const std::string& dirFullPath,
   return true;
 }
 
-bool SambaFsp::readDirectoryEntriesLite(const std::string dirFullPath,
+bool SambaFsp::readDirectoryEntriesLite(const std::string& dirFullPath,
                                         std::vector<EntryMetadata>* entries,
                                         pp::VarDictionary* result) {
   int dirId = -1;
@@ -676,21 +680,7 @@ bool SambaFsp::readDirectoryEntriesLite(const std::string dirFullPath,
   return success;
 }
 
-bool SambaFsp::readDirectoryEntries(const std::string dirFullPath,
-                                    std::vector<EntryMetadata>* entries,
-                                    pp::VarDictionary* result) {
-  this->logger.Info("readDirectory: " + dirFullPath);
-  if (!this->readDirectoryEntriesLite(dirFullPath, entries, result)) {
-    // Parent already set and logged any error.
-    return false;
-  }
-
-  this->populateStatInfo(dirFullPath, entries);
-  this->logger.Debug("readDirectory: COMPLETE " + dirFullPath);
-  return true;
-}
-
-void SambaFsp::populateStatInfo(const std::string dirFullPath,
+void SambaFsp::populateStatInfo(const std::string& dirFullPath,
                                 std::vector<EntryMetadata>* entries) {
   this->logger.Debug("readDirectory: Populating stat's(). EntryCount=" +
                      Util::ToString(entries->size()));
