@@ -316,7 +316,7 @@ bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
     return false;
   }
 
-  this->populateStatInfo(fullPath, &entries);
+  this->populateStatInfoVector(fullPath, &entries);
   this->setResultFromEntryMetadataArray(entries, result);
   this->logger.Debug("readDirectory: COMPLETE " + fullPath);
 
@@ -686,8 +686,8 @@ bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
   return success;
 }
 
-void SambaFsp::populateStatInfo(const std::string& dirFullPath,
-                                std::vector<EntryMetadata>* entries) {
+void SambaFsp::populateStatInfoVector(const std::string& dirFullPath,
+                                      std::vector<EntryMetadata>* entries) {
   this->logger.Debug("readDirectory: Populating stat's(). EntryCount=" +
                      Util::ToString(entries->size()));
 
