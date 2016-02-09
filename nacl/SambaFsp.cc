@@ -655,8 +655,8 @@ bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
         entry.name = dirent->name;
         entry.fullPath = childFullPath;
         entry.isDirectory = isDirectory;
-        this->logger.Debug("readDir: " + Util::ToString(itemCount) + ") " +
-                           this->stringify(entry));
+        // this->logger.Debug("readDir: " + Util::ToString(itemCount) + ") " +
+        //                    this->stringify(entry));
         entries->push_back(entry);
       } else {
         std::string dirType = this->mapDirectoryTypeToString(dirent->smbc_type);
@@ -693,15 +693,19 @@ void SambaFsp::populateStatInfoVector(std::vector<EntryMetadata>* entries) {
   // TODO(zentaro): Find a way do in parallel or batches.
   for (std::vector<EntryMetadata>::iterator it = entries->begin();
        it != entries->end(); ++it) {
-    const std::string& childFullPath = it->fullPath;
-    struct stat statInfo;
+    this->populateEntryMetadataWithStatInfo(*it);
+  }
+}
 
-    if (smbc_stat(childFullPath.c_str(), &statInfo) < 0) {
-      this->logger.Error("Failed to stat " + childFullPath);
-    } else {
-      it->size = statInfo.st_size;
-      it->modificationTime = statInfo.st_mtime;
-    }
+void SambaFsp::populateEntryMetadataWithStatInfo(EntryMetadata& entry) {
+  struct stat statInfo;
+
+  if (smbc_stat(entry.fullPath.c_str(), &statInfo) < 0) {
+    this->logger.Error("Failed to stat " + entry.fullPath + " errno:" +
+                       Util::ToString(errno));
+  } else {
+    entry.size = statInfo.st_size;
+    entry.modificationTime = statInfo.st_mtime;
   }
 }
 

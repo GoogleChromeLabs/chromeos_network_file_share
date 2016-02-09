@@ -121,6 +121,7 @@ class SambaFsp : public BaseNaclFsp {
                             std::vector<EntryMetadata>* entries,
                             pp::VarDictionary* result);
   void populateStatInfoVector(std::vector<EntryMetadata>* entries);
+  void populateEntryMetadataWithStatInfo(EntryMetadata& entry);
 
   // TODO(zentaro): I don't think this is used any more.
   std::string flipSlashes(std::string path);
