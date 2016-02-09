@@ -60,6 +60,8 @@ void BaseNaclFsp::HandleMessage(pp::Var var_message) {
     pp::VarDictionary optionsDict(args.Get(0));
     pp::VarDictionary result;
 
+    // TODO(zentaro): Turn this into a map to function pointers. At the
+    // least reorder by most used.
     if (functionName == "mount") {
       // NOTE: HandleMount takes args not optionsDict because it handles
       // additional data in the second arg.
