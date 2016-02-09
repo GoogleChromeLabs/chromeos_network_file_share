@@ -688,7 +688,8 @@ bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
   return success;
 }
 
-void SambaFsp::statAndStreamEntryMetadata(int messageId, std::vector<EntryMetadata>* entries) {
+void SambaFsp::statAndStreamEntryMetadata(int messageId,
+                                          std::vector<EntryMetadata>* entries) {
   // TODO(zentaro): Make it more dynamic. ie. low to start then larger.
   // TODO(zentaro): Put it somewhere else.
   // TODO(zentaro): Make a reasonable batch size.
