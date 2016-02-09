@@ -28,7 +28,9 @@ namespace NaclFsp {
 
 class EntryMetadata {
  public:
-  EntryMetadata() {}
+  EntryMetadata() 
+    : size(-1.0)
+    , modificationTime(-1) {}
 
   bool isDirectory;
   std::string name;
@@ -37,6 +39,12 @@ class EntryMetadata {
   int modificationTime;
   std::string mimeType;
   std::string thumbnail;
+
+  /**
+   * When stat info is populated size will be >=0. When this
+   * returns true only name and isDirectory are populated.
+   */
+  bool hasStatInfo() { return this->size >= 0; }
 };
 
 class INaclFsp {

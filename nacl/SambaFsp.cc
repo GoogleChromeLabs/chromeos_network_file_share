@@ -608,6 +608,75 @@ bool SambaFsp::deleteDirectoryContentsRecursive(const std::string& dirFullPath,
   return true;
 }
 
+
+bool SambaFsp::readDirectoryEntriesLite(const std::string dirFullPath,
+                                    std::vector<EntryMetadata>* entries,
+                                    pp::VarDictionary* result) {
+  int dirId = -1;
+  if ((dirId = smbc_opendir(dirFullPath.c_str())) < 0) {
+    this->LogErrorAndSetErrorResult("readDirectory:smbc_opendir", result);
+    return false;
+  }
+
+  // TODO(zentaro): Possibly per class buffer?
+  int bufferSize = 1024 * 32;
+  unsigned char* dirBuf = new unsigned char[bufferSize];
+  int itemCount = 0;
+  int bytesRemaining = 0;  
+
+  while ((bytesRemaining = smbc_getdents(
+              dirId, reinterpret_cast<struct smbc_dirent*>(dirBuf),
+              bufferSize)) > 0) {
+    // smbc_getdents writes into the supplied buffer but it can't be treated
+    // as an array because the structs are variable length. Each iteration
+    // moves the pointer forward dirent->dirlen in the buffer and casts that
+    // location in the buffer to a smbc_dirent.
+    this->logger.Info("smbc_getdents returned " +
+                      Util::ToString(bytesRemaining));
+    struct smbc_dirent* dirent = reinterpret_cast<struct smbc_dirent*>(dirBuf);
+
+    while (bytesRemaining > 0) {
+      std::string dirType = this->mapDirectoryTypeToString(dirent->smbc_type);
+
+      // TODO(zentaro): Handle other things? Like shares as folders.
+      bool isFile = dirent->smbc_type == SMBC_FILE;
+      bool isDirectory = dirent->smbc_type == SMBC_DIR;
+
+      std::string childFullPath = dirFullPath + "/" + dirent->name;
+      if (isFile || isDirectory) {
+        EntryMetadata entry;
+        entry.name = dirent->name;
+        entry.isDirectory = isDirectory;
+                 
+        this->logger.Debug("readDir: " + Util::ToString(itemCount) + ") " +
+                          this->stringify(entry));
+      } else {
+        this->logger.Debug("readDir: " + Util::ToString(itemCount) +
+                          ") Ignored " + dirType + ": " + childFullPath);
+      }
+
+      itemCount++;
+      bytesRemaining -= dirent->dirlen;
+      // TODO(zentaro): Assert bytesRemaining >= 0
+
+      // Advance in the buffer by dirent->dirlen
+      dirent = reinterpret_cast<struct smbc_dirent*>(
+          reinterpret_cast<uint8_t*>(dirent) + dirent->dirlen);      
+    }
+  }
+
+  bool success = true;
+  if (bytesRemaining < 0) {
+    // When numRead is less than 0 an error occured.
+    LogErrorAndSetErrorResult("readDirectory:smbc_getdents", result);
+    success = false;
+  }
+
+  delete[] dirBuf;
+  smbc_closedir(dirId);
+  return success;  
+}
+
 bool SambaFsp::readDirectoryEntries(const std::string dirFullPath,
                                     std::vector<EntryMetadata>* entries,
                                     pp::VarDictionary* result) {

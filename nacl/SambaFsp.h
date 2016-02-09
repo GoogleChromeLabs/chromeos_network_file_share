@@ -120,6 +120,9 @@ class SambaFsp : public BaseNaclFsp {
   bool readDirectoryEntries(const std::string dirFullPath,
                             std::vector<EntryMetadata>* entries,
                             pp::VarDictionary* result);
+  bool readDirectoryEntriesLite(const std::string dirFullPath,
+                            std::vector<EntryMetadata>* entries,
+                            pp::VarDictionary* result);  
 
   // TODO(zentaro): I don't think this is used any more.
   std::string flipSlashes(std::string path);
