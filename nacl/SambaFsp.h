@@ -121,7 +121,9 @@ class SambaFsp : public BaseNaclFsp {
                             std::vector<EntryMetadata>* entries,
                             pp::VarDictionary* result);
   void statAndStreamEntryMetadata(std::vector<EntryMetadata>* entries);
-  void populateStatInfoVector(std::vector<EntryMetadata>* entries);
+  void populateStatInfoVector(
+      const std::vector<EntryMetadata>::iterator& rangeStart,
+      const std::vector<EntryMetadata>::iterator& rangeEnd);
   void populateEntryMetadataWithStatInfo(EntryMetadata& entry);
 
   // TODO(zentaro): I don't think this is used any more.

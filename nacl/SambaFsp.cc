@@ -316,7 +316,7 @@ bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
     return false;
   }
 
-  this->populateStatInfoVector(&entries);
+  this->populateStatInfoVector(entries.begin(), entries.end());
   this->setResultFromEntryMetadataArray(entries, result);
   this->logger.Debug("readDirectory: COMPLETE " + fullPath);
 
@@ -701,13 +701,15 @@ void SambaFsp::statAndStreamEntryMetadata(std::vector<EntryMetadata>* entries) {
   }
 }
 
-void SambaFsp::populateStatInfoVector(std::vector<EntryMetadata>* entries) {
-  this->logger.Debug("readDirectory: Populating stat's(). EntryCount=" +
-                     Util::ToString(entries->size()));
+void SambaFsp::populateStatInfoVector(
+    const std::vector<EntryMetadata>::iterator& rangeStart,
+    const std::vector<EntryMetadata>::iterator& rangeEnd) {
+  this->logger.Debug("readDirectory: Populating stat's() batch of " +
+                     Util::ToString(rangeEnd - rangeStart));
 
   // TODO(zentaro): Find a way do in parallel or batches.
-  for (std::vector<EntryMetadata>::iterator it = entries->begin();
-       it != entries->end(); ++it) {
+  for (std::vector<EntryMetadata>::iterator it = rangeStart; it != rangeEnd;
+       ++it) {
     this->populateEntryMetadataWithStatInfo(*it);
   }
 }
