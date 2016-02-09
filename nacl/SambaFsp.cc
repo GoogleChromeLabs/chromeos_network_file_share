@@ -319,7 +319,8 @@ bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
   // TODO(zentaro): Replace with the two lines below.
   // this->statAndStreamEntryMetadata(messageId, entries);
   this->populateStatInfoVector(entries.begin(), entries.end());
-  this->setResultFromEntryMetadataArray(entries, result);
+  this->setResultFromEntryMetadataVector(entries.begin(), entries.end(),
+                                         result);
   this->logger.Debug("readDirectory: COMPLETE " + fullPath);
 
   // TODO(zentaro): Implement streaming and return true on success

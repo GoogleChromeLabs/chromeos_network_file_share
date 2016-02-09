@@ -162,14 +162,20 @@ void BaseNaclFsp::setResultFromEntryMetadata(const EntryMetadata& entry,
   result->Set(pp::Var("value"), entryDict);
 }
 
-void BaseNaclFsp::setResultFromEntryMetadataArray(
-    const std::vector<EntryMetadata>& entries, pp::VarDictionary* result) {
+void BaseNaclFsp::setResultFromEntryMetadataVector(
+    const std::vector<EntryMetadata>::iterator& rangeStart,
+    const std::vector<EntryMetadata>::iterator& rangeEnd,
+    pp::VarDictionary* result) {
+  // TODO(zentaro): Is there an initializer to preset the array size?
   pp::VarArray entriesArray;
+  size_t index = 0;
 
-  for (size_t i = 0; i < entries.size(); i++) {
+  for (std::vector<EntryMetadata>::iterator it = rangeStart; it != rangeEnd;
+       ++it) {
     pp::VarDictionary entryDict;
-    this->setEntryMetadata(entries[i], &entryDict);
-    entriesArray.Set(i, entryDict);
+    this->setEntryMetadata(*it, &entryDict);
+    entriesArray.Set(index, entryDict);
+    index++;
   }
 
   result->Set(pp::Var("value"), entriesArray);
