@@ -310,7 +310,7 @@ void SambaFsp::readDirectory(const ReadDirectoryOptions& options,
       getFullPathFromRelativePath(options.fileSystemId, relativePath);
 
   this->logger.Info("readDirectory: " + fullPath);
-  if (!this->readDirectoryEntriesLite(fullPath, &entries, result)) {
+  if (!this->readDirectoryEntries(fullPath, &entries, result)) {
     // Parent already set and logged any error.
     return;
   }
@@ -580,7 +580,7 @@ bool SambaFsp::deleteDirectoryContentsRecursive(const std::string& dirFullPath,
                                                 pp::VarDictionary* result) {
   std::vector<EntryMetadata> entries;
 
-  if (!readDirectoryEntriesLite(dirFullPath, &entries, result)) {
+  if (!readDirectoryEntries(dirFullPath, &entries, result)) {
     return false;
   }
 
@@ -612,9 +612,9 @@ bool SambaFsp::deleteDirectoryContentsRecursive(const std::string& dirFullPath,
   return true;
 }
 
-bool SambaFsp::readDirectoryEntriesLite(const std::string& dirFullPath,
-                                        std::vector<EntryMetadata>* entries,
-                                        pp::VarDictionary* result) {
+bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
+                                    std::vector<EntryMetadata>* entries,
+                                    pp::VarDictionary* result) {
   int dirId = -1;
   if ((dirId = smbc_opendir(dirFullPath.c_str())) < 0) {
     this->LogErrorAndSetErrorResult("readDirectory:smbc_opendir", result);
