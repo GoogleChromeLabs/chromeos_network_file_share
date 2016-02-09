@@ -402,8 +402,7 @@ SambaClient.prototype.readDirectoryHandler = function(
     console.log(response.result.value);
 
     this.metadataCache.cacheDirectoryContents(
-        options.fileSystemId, options.directoryPath,
-        response.result.value);
+        options.fileSystemId, options.directoryPath, response.result.value);
 
     // NOTE: If this ever supports hasMore the way the caching is done
     // must also change to avoid overwriting with each batch.
@@ -414,14 +413,12 @@ SambaClient.prototype.readDirectoryHandler = function(
   // TODO(zentaro): Support passing processDataFn to the sendMessage_
   // function for streaming.
   this.sendMessage_('readDirectory', [options])
-      .then(
-          processDataFn,
-          function(err) {
-            log.error('readDirectory failed with ' + err);
+      .then(processDataFn, function(err) {
+        log.error('readDirectory failed with ' + err);
 
-            // TODO: More specific??
-            errorFn('FAILED');
-          });
+        // TODO: More specific??
+        errorFn('FAILED');
+      });
 };
 
 SambaClient.prototype.openFileHandler = function(options, successFn, errorFn) {

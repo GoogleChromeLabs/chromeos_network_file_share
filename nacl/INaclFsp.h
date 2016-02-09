@@ -28,9 +28,7 @@ namespace NaclFsp {
 
 class EntryMetadata {
  public:
-  EntryMetadata() 
-    : size(-1.0)
-    , modificationTime(-1) {}
+  EntryMetadata() : size(-1.0), modificationTime(-1) {}
 
   bool isDirectory;
   std::string name;

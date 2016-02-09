@@ -396,8 +396,8 @@ void SambaFsp::readFile(const ReadFileOptions& options,
     // TODO(zentaro): Use min.
     uint32_t remainingFileLength = lengthAtOpen - options.offset;
     uint32_t totalBytesToRead = remainingFileLength < options.length
-        ? remainingFileLength
-        : options.length;
+                                    ? remainingFileLength
+                                    : options.length;
 
     this->logger.Info("readFiles req=" + Util::ToString(options.length) +
                       " reading=" + Util::ToString(totalBytesToRead));
@@ -413,13 +413,13 @@ void SambaFsp::readFile(const ReadFileOptions& options,
       while (bytesLeftToRead > 0) {
         // TODO(zentaro): Use min.
         size_t bytesToRead = bytesLeftToRead < MAX_BYTES_PER_READ
-            ? bytesLeftToRead
-            : MAX_BYTES_PER_READ;
+                                 ? bytesLeftToRead
+                                 : MAX_BYTES_PER_READ;
 
-        this->logger.Debug("readFiles: " +
-            Util::ToString(totalBytesToRead - bytesLeftToRead) +
-            "-" +
-            Util::ToString(totalBytesToRead - bytesLeftToRead + bytesToRead - 1) +
+        this->logger.Debug(
+            "readFiles: " + Util::ToString(totalBytesToRead - bytesLeftToRead) +
+            "-" + Util::ToString(totalBytesToRead - bytesLeftToRead +
+                                 bytesToRead - 1) +
             " of " + Util::ToString(totalBytesToRead));
         ssize_t bytesRead = smbc_read(openFileId, buf, bytesToRead);
         this->logger.Info("readFiles:Done");
@@ -608,10 +608,9 @@ bool SambaFsp::deleteDirectoryContentsRecursive(const std::string& dirFullPath,
   return true;
 }
 
-
 bool SambaFsp::readDirectoryEntriesLite(const std::string dirFullPath,
-                                    std::vector<EntryMetadata>* entries,
-                                    pp::VarDictionary* result) {
+                                        std::vector<EntryMetadata>* entries,
+                                        pp::VarDictionary* result) {
   int dirId = -1;
   if ((dirId = smbc_opendir(dirFullPath.c_str())) < 0) {
     this->LogErrorAndSetErrorResult("readDirectory:smbc_opendir", result);
@@ -648,12 +647,12 @@ bool SambaFsp::readDirectoryEntriesLite(const std::string dirFullPath,
         entry.name = dirent->name;
         entry.isDirectory = isDirectory;
         this->logger.Debug("readDir: " + Util::ToString(itemCount) + ") " +
-                          this->stringify(entry));
+                           this->stringify(entry));
         entries->push_back(entry);
       } else {
         std::string dirType = this->mapDirectoryTypeToString(dirent->smbc_type);
         this->logger.Debug("readDir: " + Util::ToString(itemCount) +
-                          ") Ignored " + dirType + ": " + childFullPath);
+                           ") Ignored " + dirType + ": " + childFullPath);
       }
 
       itemCount++;
@@ -693,8 +692,9 @@ bool SambaFsp::readDirectoryEntries(const std::string dirFullPath,
 }
 
 void SambaFsp::populateStatInfo(const std::string dirFullPath,
-                                    std::vector<EntryMetadata>* entries) {
-  this->logger.Debug("readDirectory: Populating stat's(). EntryCount=" + Util::ToString(entries->size()));
+                                std::vector<EntryMetadata>* entries) {
+  this->logger.Debug("readDirectory: Populating stat's(). EntryCount=" +
+                     Util::ToString(entries->size()));
 
   // TODO(zentaro): Find a way do in parallel or batches.
   for (std::vector<EntryMetadata>::iterator it = entries->begin();

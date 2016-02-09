@@ -34,7 +34,8 @@ MessageRouter.prototype.initialize = function(sendMessageFn) {
   this.initializeResolver.resolve();
 };
 
-MessageRouter.prototype.sendMessageWithRetry = function(message, opt_processDataFn) {
+MessageRouter.prototype.sendMessageWithRetry = function(
+    message, opt_processDataFn) {
   var operation = message.functionName + '[' + message.messageId + ']';
 
   // TODO(zentaro): Should retry be configurable?
@@ -50,7 +51,7 @@ MessageRouter.prototype.sendMessage = function(message, opt_processDataFn) {
     throw 'Cannot send duplicate message id';
   }
 
-  //this.messages[messageId] = getTimedPromiseResolver(operation);
+  // this.messages[messageId] = getTimedPromiseResolver(operation);
   this.messages[messageId] = {
     resolver: getPromiseResolver(),
     processDataFn: opt_processDataFn
@@ -93,7 +94,8 @@ MessageRouter.prototype.handleMessage = function(message) {
     } else {
       if (message.data.hasMore) {
         failed = true;
-        var errorMessage = 'No processing function supplied for streamed message ' + messageId;
+        var errorMessage =
+            'No processing function supplied for streamed message ' + messageId;
         log.error(errorMessage);
         this.messages[messageId].resolver.reject(errorMessage);
       } else {

@@ -121,8 +121,8 @@ class SambaFsp : public BaseNaclFsp {
                             std::vector<EntryMetadata>* entries,
                             pp::VarDictionary* result);
   bool readDirectoryEntriesLite(const std::string dirFullPath,
-                            std::vector<EntryMetadata>* entries,
-                            pp::VarDictionary* result);
+                                std::vector<EntryMetadata>* entries,
+                                pp::VarDictionary* result);
   void populateStatInfo(const std::string dirFullPath,
                         std::vector<EntryMetadata>* entries);
 

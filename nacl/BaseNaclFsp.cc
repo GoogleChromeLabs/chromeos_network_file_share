@@ -129,7 +129,8 @@ void BaseNaclFsp::HandleMessage(pp::Var var_message) {
   }
 }
 
-void BaseNaclFsp::sendMessage(const std::string& functionName, int messageId, const pp::VarDictionary& result, bool hasMore) {
+void BaseNaclFsp::sendMessage(const std::string& functionName, int messageId,
+                              const pp::VarDictionary& result, bool hasMore) {
   pp::VarDictionary response;
   response.Set(pp::Var("functionName"), functionName);
   response.Set(pp::Var("messageId"), messageId);

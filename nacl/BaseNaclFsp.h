@@ -44,7 +44,8 @@ class BaseNaclFsp : public INaclFsp {
   void setResultFromArrayBuffer(const pp::VarArrayBuffer& buffer,
                                 pp::VarDictionary* result);
 
-  void sendMessage(const std::string& functionName, int messageId, const pp::VarDictionary& result, bool hasMore);
+  void sendMessage(const std::string& functionName, int messageId,
+                   const pp::VarDictionary& result, bool hasMore);
 
   std::string stringify(const EntryMetadata& entry);
 
