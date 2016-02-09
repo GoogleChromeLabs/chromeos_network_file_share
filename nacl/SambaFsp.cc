@@ -636,21 +636,22 @@ bool SambaFsp::readDirectoryEntriesLite(const std::string dirFullPath,
     struct smbc_dirent* dirent = reinterpret_cast<struct smbc_dirent*>(dirBuf);
 
     while (bytesRemaining > 0) {
-      std::string dirType = this->mapDirectoryTypeToString(dirent->smbc_type);
-
       // TODO(zentaro): Handle other things? Like shares as folders.
       bool isFile = dirent->smbc_type == SMBC_FILE;
       bool isDirectory = dirent->smbc_type == SMBC_DIR;
 
+      // TODO(zentaro): Can maybe put this into EntryMetadata because all
+      // users need it anyway.
       std::string childFullPath = dirFullPath + "/" + dirent->name;
       if (isFile || isDirectory) {
         EntryMetadata entry;
         entry.name = dirent->name;
         entry.isDirectory = isDirectory;
-                 
         this->logger.Debug("readDir: " + Util::ToString(itemCount) + ") " +
                           this->stringify(entry));
+        entries->push_back(entry);
       } else {
+        std::string dirType = this->mapDirectoryTypeToString(dirent->smbc_type);
         this->logger.Debug("readDir: " + Util::ToString(itemCount) +
                           ") Ignored " + dirType + ": " + childFullPath);
       }
@@ -680,79 +681,30 @@ bool SambaFsp::readDirectoryEntriesLite(const std::string dirFullPath,
 bool SambaFsp::readDirectoryEntries(const std::string dirFullPath,
                                     std::vector<EntryMetadata>* entries,
                                     pp::VarDictionary* result) {
-  int dirId = -1;
-  if ((dirId = smbc_opendir(dirFullPath.c_str())) < 0) {
-    this->LogErrorAndSetErrorResult("readDirectory:smbc_opendir", result);
+  this->logger.Info("readDirectory: " + dirFullPath);
+  if (!this->readDirectoryEntriesLite(dirFullPath, entries, result)) {
+    // Parent already set and logged any error.
     return false;
   }
 
-  // TODO(zentaro): Possibly per class buffer?
-  int bufferSize = 1024 * 32;
-  unsigned char* dirBuf = new unsigned char[bufferSize];
-  int itemCount = 0;
-  int bytesRemaining = 0;
+  this->logger.Debug("readDirectory: Populating stat's(). EntryCount=" + Util::ToString(entries->size()));
 
-  while ((bytesRemaining = smbc_getdents(
-              dirId, reinterpret_cast<struct smbc_dirent*>(dirBuf),
-              bufferSize)) > 0) {
-    // smbc_getdents writes into the supplied buffer but it can't be treated
-    // as an array because the structs are variable length. Each iteration
-    // moves the pointer forward dirent->dirlen in the buffer and casts that
-    // location in the buffer to a smbc_dirent.
-    this->logger.Info("smbc_getdents returned " +
-                      Util::ToString(bytesRemaining));
-    struct smbc_dirent* dirent = reinterpret_cast<struct smbc_dirent*>(dirBuf);
+  // TODO(zentaro): Find a way do in parallel or batches.
+  for (std::vector<EntryMetadata>::iterator it = entries->begin();
+       it != entries->end(); ++it) {
+    std::string childFullPath = dirFullPath + "/" + it->name;
+    struct stat statInfo;
 
-    while (bytesRemaining > 0) {
-      std::string dirType = this->mapDirectoryTypeToString(dirent->smbc_type);
-
-      // TODO(zentaro): Handle other things? Like shares as folders.
-      bool isFile = dirent->smbc_type == SMBC_FILE;
-      bool isDirectory = dirent->smbc_type == SMBC_DIR;
-
-      std::string childFullPath = dirFullPath + "/" + dirent->name;
-      if (isFile || isDirectory) {
-        EntryMetadata entry;
-        struct stat statInfo;
-
-        entry.name = dirent->name;
-        entry.isDirectory = isDirectory;
-        entry.size = 0;
-        if (smbc_stat(childFullPath.c_str(), &statInfo) < 0) {
-          // TODO(zentaro): Should this continue here?
-          this->logger.Error("Failed to stat " + childFullPath);
-        } else {
-          entry.size = statInfo.st_size;
-          entry.modificationTime = statInfo.st_mtime;
-        }
-
-        this->logger.Info("readDir: " + Util::ToString(itemCount) + ") " +
-                          this->stringify(entry));
-        entries->push_back(entry);
-      } else {
-        this->logger.Info("readDir: " + Util::ToString(itemCount) +
-                          ") Ignored " + dirType + ": " + childFullPath);
-      }
-      itemCount++;
-      bytesRemaining -= dirent->dirlen;
-      // TODO(zentaro): Assert bytesRemaining >= 0
-
-      // Advance in the buffer by dirent->dirlen
-      dirent = reinterpret_cast<struct smbc_dirent*>(
-          reinterpret_cast<unsigned char*>(dirent) + dirent->dirlen);
-    }
+    if (smbc_stat(childFullPath.c_str(), &statInfo) < 0) {
+      this->logger.Error("Failed to stat " + childFullPath);
+    } else {
+      it->size = statInfo.st_size;
+      it->modificationTime = statInfo.st_mtime;
+    }    
   }
 
-  bool success = true;
-  if (bytesRemaining < 0) {
-    // When numRead is less than 0 an error occured.
-    LogErrorAndSetErrorResult("readDirectory:smbc_getdents", result);
-    success = false;
-  }
-
-  delete[] dirBuf;
-  smbc_closedir(dirId);
-  return success;
+  this->logger.Debug("readDirectory: COMPLETE " + dirFullPath);
+  return true;
 }
 
 void SambaFsp::moveEntry(const MoveEntryOptions& options,
