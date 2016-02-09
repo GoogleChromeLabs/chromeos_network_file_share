@@ -584,7 +584,7 @@ bool SambaFsp::deleteDirectoryContentsRecursive(const std::string& dirFullPath,
                     " entries to delete under " + dirFullPath);
   for (std::vector<EntryMetadata>::iterator it = entries.begin();
        it != entries.end(); ++it) {
-    std::string childFullPath = dirFullPath + "/" + it->name;
+    const std::string& childFullPath = it->fullPath;
     if (it->isDirectory) {
       if ((it->name == "..") || (it->name == ".")) {
         continue;
@@ -639,12 +639,11 @@ bool SambaFsp::readDirectoryEntriesLite(const std::string dirFullPath,
       bool isFile = dirent->smbc_type == SMBC_FILE;
       bool isDirectory = dirent->smbc_type == SMBC_DIR;
 
-      // TODO(zentaro): Can maybe put this into EntryMetadata because all
-      // users need it anyway.
       std::string childFullPath = dirFullPath + "/" + dirent->name;
       if (isFile || isDirectory) {
         EntryMetadata entry;
         entry.name = dirent->name;
+        entry.fullPath = childFullPath;
         entry.isDirectory = isDirectory;
         this->logger.Debug("readDir: " + Util::ToString(itemCount) + ") " +
                            this->stringify(entry));
@@ -699,7 +698,7 @@ void SambaFsp::populateStatInfo(const std::string dirFullPath,
   // TODO(zentaro): Find a way do in parallel or batches.
   for (std::vector<EntryMetadata>::iterator it = entries->begin();
        it != entries->end(); ++it) {
-    std::string childFullPath = dirFullPath + "/" + it->name;
+    const std::string& childFullPath = it->fullPath;
     struct stat statInfo;
 
     if (smbc_stat(childFullPath.c_str(), &statInfo) < 0) {

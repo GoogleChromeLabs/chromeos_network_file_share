@@ -32,6 +32,7 @@ class EntryMetadata {
 
   bool isDirectory;
   std::string name;
+  std::string fullPath;
   double size;
 
   int modificationTime;
