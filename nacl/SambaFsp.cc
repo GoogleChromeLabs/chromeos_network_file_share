@@ -316,17 +316,16 @@ bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
     return false;
   }
 
-  // TODO(zentaro): Replace with the two lines below.
-  // this->statAndStreamEntryMetadata(messageId, entries);
-  this->populateStatInfoVector(entries.begin(), entries.end());
-  this->setResultFromEntryMetadataVector(entries.begin(), entries.end(),
-                                         result);
+  // Just short circuit when there is nothing to do.
+  if (entries.size() == 0) {
+    this->setResultFromEntryMetadataVector(entries.end(), entries.end(), result);
+    return false;
+  }
+
+  this->statAndStreamEntryMetadata(messageId, &entries);
   this->logger.Debug("readDirectory: COMPLETE " + fullPath);
 
-  // TODO(zentaro): Implement streaming and return true on success
-  // to indicate that all messages were already sent through the
-  // stream (and that 'result' can be discarded).
-  return false;
+  return true;
 }
 
 void SambaFsp::openFile(const OpenFileOptions& options,
@@ -695,17 +694,20 @@ void SambaFsp::statAndStreamEntryMetadata(int messageId,
   // TODO(zentaro): Put it somewhere else.
   // TODO(zentaro): Make a reasonable batch size.
   const int BATCH_SIZE = 64 * 1024;
-  std::vector<EntryMetadata>::iterator rangeStart = entries->begin();
-  std::vector<EntryMetadata>::iterator rangeEnd = rangeStart + BATCH_SIZE;
+  const size_t MAX_ENTRIES = entries->size();
+  size_t startIndex = 0;
   bool hasMore = false;
 
-  while ((hasMore = (rangeStart != entries->end()))) {
+  while (startIndex < MAX_ENTRIES) {
     pp::VarDictionary result;
+    std::vector<EntryMetadata>::iterator rangeStart = entries->begin() + startIndex;
+    std::vector<EntryMetadata>::iterator rangeEnd = entries->begin() + std::min(startIndex + BATCH_SIZE, MAX_ENTRIES);
+
     this->populateStatInfoVector(rangeStart, rangeEnd);
-    // TODO(zentaro): Populate result.
+    this->setResultFromEntryMetadataVector(rangeStart, rangeEnd, &result);
+    hasMore = (rangeEnd != entries->end());
     this->sendMessage("readDirectory", messageId, result, hasMore);
-    rangeStart += BATCH_SIZE;
-    rangeEnd += BATCH_SIZE;
+    startIndex += BATCH_SIZE;
   }
 }
 
