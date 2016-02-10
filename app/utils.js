@@ -218,3 +218,17 @@ function joinAllIgnoringRejects(promiseList) {
 function attachResolver(promise, resolver) {
   promise.then(resolver.resolve, resolver.reject);
 }
+
+
+/**
+ * Appends tail to arr and returns arr.
+ */
+function extendArray(arr, tail) {
+  arr.length += tail.length;
+
+  for (var i = arr.length, tailLen = tail.length, j = 0; j < tailLen; ++i, ++j) {
+    arr[i] = tail[j];
+  }
+
+  return arr;
+}

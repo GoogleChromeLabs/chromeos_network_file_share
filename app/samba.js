@@ -389,6 +389,7 @@ SambaClient.prototype.readDirectoryHandler = function(
     options, successFn, errorFn) {
   log.debug('readDirectoryHandler called');
 
+  var entries = [];
   var processDataFn = function(response) {
     // Convert the date types to be dates from string
     response.result.value = response.result.value.map(function(elem) {
@@ -399,19 +400,19 @@ SambaClient.prototype.readDirectoryHandler = function(
 
     console.log(response.result.value);
 
-    // TODO(zentaro): Update the cache.
-    // this.metadataCache.cacheDirectoryContents(
-    //     options.fileSystemId, options.directoryPath, response.result.value);
-
+    // Accumulate the entries so they can be set in the cache at the end.
+    entries = extendArray(entries, response.result.value);
     log.debug('Sending batch of readDirectory data');
     successFn(response.result.value, response.hasMore);
   }.bind(this);
 
-  // TODO(zentaro): Support passing processDataFn to the sendMessage_
-  // function for streaming.
   this.sendMessage_('readDirectory', [options], processDataFn)
       .then(
-          function(value) { log.debug('readDirectory succeded.'); },
+          function() {
+            log.debug('readDirectory succeeded.');
+            this.metadataCache.cacheDirectoryContents(
+              options.fileSystemId, options.directoryPath, entries);
+          }.bind(this),
           function(err) {
             log.error('readDirectory failed with ' + err);
 
