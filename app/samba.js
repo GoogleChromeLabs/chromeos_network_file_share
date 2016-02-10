@@ -143,7 +143,7 @@ SambaClient.prototype.populateMounts_ = function() {
   }.bind(this));
 };
 
-SambaClient.prototype.sendMessage_ = function(fnName, args) {
+SambaClient.prototype.sendMessage_ = function(fnName, args, opt_processDataFn) {
   var messageId = this.getNextMessageId();
   var message = {functionName: fnName, messageId: messageId, args: args};
 
@@ -188,8 +188,8 @@ SambaClient.prototype.sendMessage_ = function(fnName, args) {
     this.mounts[fileSystemId]['mountPromise'].then(
         function() {
           log.debug('mount promise resolved. sending message to router');
-          this.router.sendMessageWithRetry(message).then(
-              resolver.resolve, resolver.reject);
+          this.router.sendMessageWithRetry(message, opt_processDataFn)
+              .then(resolver.resolve, resolver.reject);
         }.bind(this),
         function(err) {
           log.error('Trying to send message to failed mount');
@@ -390,8 +390,6 @@ SambaClient.prototype.readDirectoryHandler = function(
   log.debug('readDirectoryHandler called');
 
   var processDataFn = function(response) {
-    log.info('readDirectory succeeded');
-
     // Convert the date types to be dates from string
     response.result.value = response.result.value.map(function(elem) {
       elem.modificationTime = new Date(elem.modificationTime * 1000);
@@ -401,24 +399,25 @@ SambaClient.prototype.readDirectoryHandler = function(
 
     console.log(response.result.value);
 
-    this.metadataCache.cacheDirectoryContents(
-        options.fileSystemId, options.directoryPath, response.result.value);
+    // TODO(zentaro): Update the cache.
+    // this.metadataCache.cacheDirectoryContents(
+    //     options.fileSystemId, options.directoryPath, response.result.value);
 
-    // NOTE: If this ever supports hasMore the way the caching is done
-    // must also change to avoid overwriting with each batch.
-    var hasMore = false;
-    successFn(response.result.value, hasMore);
+    log.debug('Sending batch of readDirectory data');
+    successFn(response.result.value, response.hasMore);
   }.bind(this);
 
   // TODO(zentaro): Support passing processDataFn to the sendMessage_
   // function for streaming.
-  this.sendMessage_('readDirectory', [options])
-      .then(processDataFn, function(err) {
-        log.error('readDirectory failed with ' + err);
+  this.sendMessage_('readDirectory', [options], processDataFn)
+      .then(
+          function(value) { log.debug('readDirectory succeded.'); },
+          function(err) {
+            log.error('readDirectory failed with ' + err);
 
-        // TODO: More specific??
-        errorFn('FAILED');
-      });
+            // TODO: More specific??
+            errorFn('FAILED');
+          });
 };
 
 SambaClient.prototype.openFileHandler = function(options, successFn, errorFn) {

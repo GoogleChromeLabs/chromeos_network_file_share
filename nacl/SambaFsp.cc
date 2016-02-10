@@ -318,7 +318,8 @@ bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
 
   // Just short circuit when there is nothing to do.
   if (entries.size() == 0) {
-    this->setResultFromEntryMetadataVector(entries.end(), entries.end(), result);
+    this->setResultFromEntryMetadataVector(entries.end(), entries.end(),
+                                           result);
     return false;
   }
 
@@ -690,24 +691,32 @@ bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
 
 void SambaFsp::statAndStreamEntryMetadata(int messageId,
                                           std::vector<EntryMetadata>* entries) {
-  // TODO(zentaro): Make it more dynamic. ie. low to start then larger.
-  // TODO(zentaro): Put it somewhere else.
-  // TODO(zentaro): Make a reasonable batch size.
-  const int BATCH_SIZE = 64 * 1024;
+  // TODO(zentaro): Could be smarter and time how long each batch takes and
+  // adjust based on that. For now just a simple system.
+  const size_t INITIAL_BATCH_SIZE = 16;
+  const size_t LARGE_BATCH_SIZE = 64;
+  const size_t LARGE_BATCH_THRESHOLD = 64;
   const size_t MAX_ENTRIES = entries->size();
   size_t startIndex = 0;
   bool hasMore = false;
 
   while (startIndex < MAX_ENTRIES) {
     pp::VarDictionary result;
-    std::vector<EntryMetadata>::iterator rangeStart = entries->begin() + startIndex;
-    std::vector<EntryMetadata>::iterator rangeEnd = entries->begin() + std::min(startIndex + BATCH_SIZE, MAX_ENTRIES);
+    int currentBatchSize = LARGE_BATCH_SIZE;
+    if (startIndex < LARGE_BATCH_THRESHOLD) {
+      currentBatchSize = INITIAL_BATCH_SIZE;
+    }
+
+    std::vector<EntryMetadata>::iterator rangeStart =
+        entries->begin() + startIndex;
+    std::vector<EntryMetadata>::iterator rangeEnd =
+        entries->begin() + std::min(startIndex + currentBatchSize, MAX_ENTRIES);
 
     this->populateStatInfoVector(rangeStart, rangeEnd);
     this->setResultFromEntryMetadataVector(rangeStart, rangeEnd, &result);
     hasMore = (rangeEnd != entries->end());
     this->sendMessage("readDirectory", messageId, result, hasMore);
-    startIndex += BATCH_SIZE;
+    startIndex += currentBatchSize;
   }
 }
 
