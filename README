@@ -3,7 +3,7 @@ Overview
 This is a Chrome App that extends the built in File Manager to be able to
 support connecting to SMB file shares.
 
-The NaCl port is currently patched from Samba 4.1.16.
+The NaCl port is currently patched from Samba 4.1.22.
 
 Setup
 =====
@@ -58,9 +58,6 @@ gets to the stable branch).
 
 12) Setup build environment
       # Set NACL_SDK_ROOT if not done above
-      export TOOLCHAIN=glibc
-      export NACL_ARCH=x86_64 # or arm
-      # TODO: Figure out how to build both at same time.
 
 13) Finally you can build!
       cd chromeos_network_file_share
