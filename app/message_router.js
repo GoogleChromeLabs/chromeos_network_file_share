@@ -34,33 +34,35 @@ MessageRouter.prototype.initialize = function(sendMessageFn) {
   this.initializeResolver.resolve();
 };
 
-MessageRouter.prototype.sendMessageWithRetry = function(message) {
+MessageRouter.prototype.sendMessageWithRetry = function(
+    message, opt_processDataFn) {
   var operation = message.functionName + '[' + message.messageId + ']';
 
   // TODO(zentaro): Should retry be configurable?
   return getRetryingPromise(function() {
-    return this.sendMessage(message);
+    return this.sendMessage(message, opt_processDataFn);
   }.bind(this), operation, 3);
 };
 
-MessageRouter.prototype.sendMessage = function(message) {
+MessageRouter.prototype.sendMessage = function(message, opt_processDataFn) {
   var messageId = message.messageId;
 
   if (messageId in this.messages) {
     throw 'Cannot send duplicate message id';
   }
 
-  //// Uncomment these and comment line below to enable some timing traces.
-  // var operation = message.functionName + '[' + messageId + ']';
   // this.messages[messageId] = getTimedPromiseResolver(operation);
-  this.messages[messageId] = getPromiseResolver();
+  this.messages[messageId] = {
+    resolver: getPromiseResolver(),
+    processDataFn: opt_processDataFn
+  };
 
   // Always make sure initialization is complete before sending messages.
   this.initializeResolver.promise.then(function() {
     this.sendMessageFn(message);
   }.bind(this));
 
-  return this.messages[messageId].promise;
+  return this.messages[messageId].resolver.promise;
 };
 
 MessageRouter.prototype.handleMessage = function(message) {
@@ -72,13 +74,38 @@ MessageRouter.prototype.handleMessage = function(message) {
   }
 
   var error = message.data.result.error;
+  var failed = false;
   if (error) {
+    failed = true;
     log.error('rejecting message ' + messageId + ' ' + error);
-    this.messages[messageId].reject(error);
+    this.messages[messageId].resolver.reject(error);
   } else {
-    log.debug('resolving a message with id ' + messageId);
-    this.messages[messageId].resolve(message.data);
+    var processDataFn = this.messages[messageId].processDataFn;
+
+    if (isDef(processDataFn)) {
+      log.debug('streaming data for ' + messageId);
+      this.messages[messageId].processDataFn(message.data);
+
+      if (!message.data.hasMore) {
+        // TODO(zentaro): Accumulate results here so that the final resolution
+        // also gets the full data set.
+        this.messages[messageId].resolver.resolve(null);
+      }
+    } else {
+      if (message.data.hasMore) {
+        failed = true;
+        var errorMessage =
+            'No processing function supplied for streamed message ' + messageId;
+        log.error(errorMessage);
+        this.messages[messageId].resolver.reject(errorMessage);
+      } else {
+        this.messages[messageId].resolver.resolve(message.data);
+      }
+    }
   }
 
-  delete this.messages[messageId];
+  if (failed || !message.data.hasMore) {
+    log.debug('Deleting state for message ' + messageId);
+    delete this.messages[messageId];
+  }
 };

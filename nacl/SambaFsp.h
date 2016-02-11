@@ -72,7 +72,7 @@ class SambaFsp : public BaseNaclFsp {
                        pp::VarDictionary* result);
   virtual void getMetadata(const GetMetadataOptions& options,
                            pp::VarDictionary* result);
-  virtual void readDirectory(const ReadDirectoryOptions& options,
+  virtual bool readDirectory(const ReadDirectoryOptions& options, int messageId,
                              pp::VarDictionary* result);
   virtual void createDirectory(const CreateDirectoryOptions& options,
                                pp::VarDictionary* result);
@@ -117,9 +117,15 @@ class SambaFsp : public BaseNaclFsp {
                                         pp::VarDictionary* result);
   bool deleteEmptyDirectory(const std::string& fullPath,
                             pp::VarDictionary* result);
-  bool readDirectoryEntries(const std::string dirFullPath,
+  bool readDirectoryEntries(const std::string& dirFullPath,
                             std::vector<EntryMetadata>* entries,
                             pp::VarDictionary* result);
+  void statAndStreamEntryMetadata(int messageId,
+                                  std::vector<EntryMetadata>* entries);
+  void populateStatInfoVector(
+      const std::vector<EntryMetadata>::iterator& rangeStart,
+      const std::vector<EntryMetadata>::iterator& rangeEnd);
+  void populateEntryMetadataWithStatInfo(EntryMetadata& entry);
 
   // TODO(zentaro): I don't think this is used any more.
   std::string flipSlashes(std::string path);

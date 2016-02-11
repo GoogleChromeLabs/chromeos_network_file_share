@@ -298,7 +298,7 @@ std::string SambaFsp::createCredentialLookupKey(
   return host + "$$$" + mountConfig.share;
 }
 
-void SambaFsp::readDirectory(const ReadDirectoryOptions& options,
+bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
                              pp::VarDictionary* result) {
   this->logger.Info("readDirectory: " + options.directoryPath);
   std::vector<EntryMetadata> entries;
@@ -309,11 +309,24 @@ void SambaFsp::readDirectory(const ReadDirectoryOptions& options,
   std::string fullPath =
       getFullPathFromRelativePath(options.fileSystemId, relativePath);
 
-  if (!readDirectoryEntries(fullPath, &entries, result)) {
-    return;
+  this->logger.Info("readDirectory: " + fullPath);
+  if (!this->readDirectoryEntries(fullPath, &entries, result)) {
+    // Parent already set and logged any error but did not send it.
+    // Returning false tells the caller to send the result.
+    return false;
   }
 
-  this->setResultFromEntryMetadataArray(entries, result);
+  // Just short circuit when there is nothing to do.
+  if (entries.size() == 0) {
+    this->setResultFromEntryMetadataVector(entries.end(), entries.end(),
+                                           result);
+    return false;
+  }
+
+  this->statAndStreamEntryMetadata(messageId, &entries);
+  this->logger.Debug("readDirectory: COMPLETE " + fullPath);
+
+  return true;
 }
 
 void SambaFsp::openFile(const OpenFileOptions& options,
@@ -395,9 +408,9 @@ void SambaFsp::readFile(const ReadFileOptions& options,
     // is restricted to the number of remaining bytes in the file.
     // TODO(zentaro): Use min.
     uint32_t remainingFileLength = lengthAtOpen - options.offset;
-    uint32_t totalBytesToRead = remainingFileLength < options.length 
-        ? remainingFileLength 
-        : options.length;
+    uint32_t totalBytesToRead = remainingFileLength < options.length
+                                    ? remainingFileLength
+                                    : options.length;
 
     this->logger.Info("readFiles req=" + Util::ToString(options.length) +
                       " reading=" + Util::ToString(totalBytesToRead));
@@ -412,14 +425,14 @@ void SambaFsp::readFile(const ReadFileOptions& options,
 
       while (bytesLeftToRead > 0) {
         // TODO(zentaro): Use min.
-        size_t bytesToRead = bytesLeftToRead < MAX_BYTES_PER_READ 
-            ? bytesLeftToRead 
-            : MAX_BYTES_PER_READ;
+        size_t bytesToRead = bytesLeftToRead < MAX_BYTES_PER_READ
+                                 ? bytesLeftToRead
+                                 : MAX_BYTES_PER_READ;
 
-        this->logger.Debug("readFiles: " + 
-            Util::ToString(totalBytesToRead - bytesLeftToRead) + 
-            "-" + 
-            Util::ToString(totalBytesToRead - bytesLeftToRead + bytesToRead - 1) + 
+        this->logger.Debug(
+            "readFiles: " + Util::ToString(totalBytesToRead - bytesLeftToRead) +
+            "-" + Util::ToString(totalBytesToRead - bytesLeftToRead +
+                                 bytesToRead - 1) +
             " of " + Util::ToString(totalBytesToRead));
         ssize_t bytesRead = smbc_read(openFileId, buf, bytesToRead);
         this->logger.Info("readFiles:Done");
@@ -584,7 +597,7 @@ bool SambaFsp::deleteDirectoryContentsRecursive(const std::string& dirFullPath,
                     " entries to delete under " + dirFullPath);
   for (std::vector<EntryMetadata>::iterator it = entries.begin();
        it != entries.end(); ++it) {
-    std::string childFullPath = dirFullPath + "/" + it->name;
+    const std::string& childFullPath = it->fullPath;
     if (it->isDirectory) {
       if ((it->name == "..") || (it->name == ".")) {
         continue;
@@ -608,7 +621,7 @@ bool SambaFsp::deleteDirectoryContentsRecursive(const std::string& dirFullPath,
   return true;
 }
 
-bool SambaFsp::readDirectoryEntries(const std::string dirFullPath,
+bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
                                     std::vector<EntryMetadata>* entries,
                                     pp::VarDictionary* result) {
   int dirId = -1;
@@ -635,8 +648,6 @@ bool SambaFsp::readDirectoryEntries(const std::string dirFullPath,
     struct smbc_dirent* dirent = reinterpret_cast<struct smbc_dirent*>(dirBuf);
 
     while (bytesRemaining > 0) {
-      std::string dirType = this->mapDirectoryTypeToString(dirent->smbc_type);
-
       // TODO(zentaro): Handle other things? Like shares as folders.
       bool isFile = dirent->smbc_type == SMBC_FILE;
       bool isDirectory = dirent->smbc_type == SMBC_DIR;
@@ -644,33 +655,25 @@ bool SambaFsp::readDirectoryEntries(const std::string dirFullPath,
       std::string childFullPath = dirFullPath + "/" + dirent->name;
       if (isFile || isDirectory) {
         EntryMetadata entry;
-        struct stat statInfo;
-
         entry.name = dirent->name;
+        entry.fullPath = childFullPath;
         entry.isDirectory = isDirectory;
-        entry.size = 0;
-        if (smbc_stat(childFullPath.c_str(), &statInfo) < 0) {
-          // TODO(zentaro): Should this continue here?
-          this->logger.Error("Failed to stat " + childFullPath);
-        } else {
-          entry.size = statInfo.st_size;
-          entry.modificationTime = statInfo.st_mtime;
-        }
-
-        this->logger.Info("readDir: " + Util::ToString(itemCount) + ") " +
-                          this->stringify(entry));
+        // this->logger.Debug("readDir: " + Util::ToString(itemCount) + ") " +
+        //                    this->stringify(entry));
         entries->push_back(entry);
       } else {
-        this->logger.Info("readDir: " + Util::ToString(itemCount) +
-                          ") Ignored " + dirType + ": " + childFullPath);
+        std::string dirType = this->mapDirectoryTypeToString(dirent->smbc_type);
+        this->logger.Debug("readDir: " + Util::ToString(itemCount) +
+                           ") Ignored " + dirType + ": " + childFullPath);
       }
+
       itemCount++;
       bytesRemaining -= dirent->dirlen;
       // TODO(zentaro): Assert bytesRemaining >= 0
 
       // Advance in the buffer by dirent->dirlen
       dirent = reinterpret_cast<struct smbc_dirent*>(
-          reinterpret_cast<unsigned char*>(dirent) + dirent->dirlen);
+          reinterpret_cast<uint8_t*>(dirent) + dirent->dirlen);
     }
   }
 
@@ -684,6 +687,62 @@ bool SambaFsp::readDirectoryEntries(const std::string dirFullPath,
   delete[] dirBuf;
   smbc_closedir(dirId);
   return success;
+}
+
+void SambaFsp::statAndStreamEntryMetadata(int messageId,
+                                          std::vector<EntryMetadata>* entries) {
+  // TODO(zentaro): Could be smarter and time how long each batch takes and
+  // adjust based on that. For now just a simple system.
+  const size_t INITIAL_BATCH_SIZE = 16;
+  const size_t LARGE_BATCH_SIZE = 64;
+  const size_t LARGE_BATCH_THRESHOLD = 64;
+  const size_t MAX_ENTRIES = entries->size();
+  size_t startIndex = 0;
+  bool hasMore = false;
+
+  while (startIndex < MAX_ENTRIES) {
+    pp::VarDictionary result;
+    int currentBatchSize = LARGE_BATCH_SIZE;
+    if (startIndex < LARGE_BATCH_THRESHOLD) {
+      currentBatchSize = INITIAL_BATCH_SIZE;
+    }
+
+    std::vector<EntryMetadata>::iterator rangeStart =
+        entries->begin() + startIndex;
+    std::vector<EntryMetadata>::iterator rangeEnd =
+        entries->begin() + std::min(startIndex + currentBatchSize, MAX_ENTRIES);
+
+    this->populateStatInfoVector(rangeStart, rangeEnd);
+    this->setResultFromEntryMetadataVector(rangeStart, rangeEnd, &result);
+    hasMore = (rangeEnd != entries->end());
+    this->sendMessage("readDirectory", messageId, result, hasMore);
+    startIndex += currentBatchSize;
+  }
+}
+
+void SambaFsp::populateStatInfoVector(
+    const std::vector<EntryMetadata>::iterator& rangeStart,
+    const std::vector<EntryMetadata>::iterator& rangeEnd) {
+  this->logger.Debug("readDirectory: Populating stat's() batch of " +
+                     Util::ToString(rangeEnd - rangeStart));
+
+  // TODO(zentaro): Find a way do in parallel or batches.
+  for (std::vector<EntryMetadata>::iterator it = rangeStart; it != rangeEnd;
+       ++it) {
+    this->populateEntryMetadataWithStatInfo(*it);
+  }
+}
+
+void SambaFsp::populateEntryMetadataWithStatInfo(EntryMetadata& entry) {
+  struct stat statInfo;
+
+  if (smbc_stat(entry.fullPath.c_str(), &statInfo) < 0) {
+    this->logger.Error("Failed to stat " + entry.fullPath + " errno:" +
+                       Util::ToString(errno));
+  } else {
+    entry.size = statInfo.st_size;
+    entry.modificationTime = statInfo.st_mtime;
+  }
 }
 
 void SambaFsp::moveEntry(const MoveEntryOptions& options,

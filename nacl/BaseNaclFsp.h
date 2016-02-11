@@ -38,11 +38,16 @@ class BaseNaclFsp : public INaclFsp {
   void setResultFromEntryMetadata(const EntryMetadata& entry,
                                   pp::VarDictionary* result);
 
-  void setResultFromEntryMetadataArray(const std::vector<EntryMetadata>& entry,
-                                       pp::VarDictionary* result);
+  void setResultFromEntryMetadataVector(
+      const std::vector<EntryMetadata>::iterator& rangeStart,
+      const std::vector<EntryMetadata>::iterator& rangeEnd,
+      pp::VarDictionary* result);
 
   void setResultFromArrayBuffer(const pp::VarArrayBuffer& buffer,
                                 pp::VarDictionary* result);
+
+  void sendMessage(const std::string& functionName, int messageId,
+                   const pp::VarDictionary& result, bool hasMore);
 
   std::string stringify(const EntryMetadata& entry);
 

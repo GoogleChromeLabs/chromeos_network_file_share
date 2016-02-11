@@ -59,7 +59,10 @@ void BaseNaclFsp::HandleMessage(pp::Var var_message) {
     pp::VarArray args(message.Get("args"));
     pp::VarDictionary optionsDict(args.Get(0));
     pp::VarDictionary result;
+    bool resultsAlreadySent = false;
 
+    // TODO(zentaro): Turn this into a map to function pointers. At the
+    // least reorder by most used.
     if (functionName == "mount") {
       // NOTE: HandleMount takes args not optionsDict because it handles
       // additional data in the second arg.
@@ -73,7 +76,7 @@ void BaseNaclFsp::HandleMessage(pp::Var var_message) {
     } else if (functionName == "readDirectory") {
       ReadDirectoryOptions options;
       options.Set(optionsDict);
-      this->readDirectory(options, &result);
+      resultsAlreadySent = this->readDirectory(options, messageId, &result);
     } else if (functionName == "openFile") {
       OpenFileOptions options;
       options.Set(optionsDict);
@@ -123,14 +126,23 @@ void BaseNaclFsp::HandleMessage(pp::Var var_message) {
       return;
     }
 
-    // TODO(zentaro): Helper method.
-    pp::VarDictionary response;
-    response.Set(pp::Var("functionName"), functionName);
-    response.Set(pp::Var("messageId"), messageId);
-    response.Set(pp::Var("result"), result);
-
-    PSInterfaceMessaging()->PostMessage(PSGetInstanceId(), response.pp_var());
+    // Successfully streamed messages have already sent all
+    // needed messages.
+    if (!resultsAlreadySent) {
+      this->sendMessage(functionName, messageId, result, false);
+    }
   }
+}
+
+void BaseNaclFsp::sendMessage(const std::string& functionName, int messageId,
+                              const pp::VarDictionary& result, bool hasMore) {
+  pp::VarDictionary response;
+  response.Set(pp::Var("functionName"), functionName);
+  response.Set(pp::Var("messageId"), messageId);
+  response.Set(pp::Var("result"), result);
+  response.Set(pp::Var("hasMore"), hasMore);
+
+  PSInterfaceMessaging()->PostMessage(PSGetInstanceId(), response.pp_var());
 }
 
 void BaseNaclFsp::setEntryMetadata(const EntryMetadata& entry,
@@ -150,14 +162,20 @@ void BaseNaclFsp::setResultFromEntryMetadata(const EntryMetadata& entry,
   result->Set(pp::Var("value"), entryDict);
 }
 
-void BaseNaclFsp::setResultFromEntryMetadataArray(
-    const std::vector<EntryMetadata>& entries, pp::VarDictionary* result) {
+void BaseNaclFsp::setResultFromEntryMetadataVector(
+    const std::vector<EntryMetadata>::iterator& rangeStart,
+    const std::vector<EntryMetadata>::iterator& rangeEnd,
+    pp::VarDictionary* result) {
+  // TODO(zentaro): Is there an initializer to preset the array size?
   pp::VarArray entriesArray;
+  size_t index = 0;
 
-  for (size_t i = 0; i < entries.size(); i++) {
+  for (std::vector<EntryMetadata>::iterator it = rangeStart; it != rangeEnd;
+       ++it) {
     pp::VarDictionary entryDict;
-    this->setEntryMetadata(entries[i], &entryDict);
-    entriesArray.Set(i, entryDict);
+    this->setEntryMetadata(*it, &entryDict);
+    entriesArray.Set(index, entryDict);
+    index++;
   }
 
   result->Set(pp::Var("value"), entriesArray);

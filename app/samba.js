@@ -143,7 +143,7 @@ SambaClient.prototype.populateMounts_ = function() {
   }.bind(this));
 };
 
-SambaClient.prototype.sendMessage_ = function(fnName, args) {
+SambaClient.prototype.sendMessage_ = function(fnName, args, opt_processDataFn) {
   var messageId = this.getNextMessageId();
   var message = {functionName: fnName, messageId: messageId, args: args};
 
@@ -172,7 +172,7 @@ SambaClient.prototype.sendMessage_ = function(fnName, args) {
 
     // It's possible that a message gets sent very early after boot before all
     // the persisted mounts have been remounted or unmounted if there are no
-    // saved credentials. If it was unmounted while waithing for the populate
+    // saved credentials. If it was unmounted while waiting for the populate
     // resolver then we just fail here.
     if (!fileSystem) {
       resolver.reject('NOT_FOUND');
@@ -188,8 +188,8 @@ SambaClient.prototype.sendMessage_ = function(fnName, args) {
     this.mounts[fileSystemId]['mountPromise'].then(
         function() {
           log.debug('mount promise resolved. sending message to router');
-          this.router.sendMessageWithRetry(message).then(
-              resolver.resolve, resolver.reject);
+          this.router.sendMessageWithRetry(message, opt_processDataFn)
+              .then(resolver.resolve, resolver.reject);
         }.bind(this),
         function(err) {
           log.error('Trying to send message to failed mount');
@@ -389,28 +389,29 @@ SambaClient.prototype.readDirectoryHandler = function(
     options, successFn, errorFn) {
   log.debug('readDirectoryHandler called');
 
-  this.sendMessage_('readDirectory', [options])
+  var entries = [];
+  var processDataFn = function(response) {
+    // Convert the date types to be dates from string
+    response.result.value = response.result.value.map(function(elem) {
+      elem.modificationTime = new Date(elem.modificationTime * 1000);
+
+      return elem;
+    });
+
+    console.log(response.result.value);
+
+    // Accumulate the entries so they can be set in the cache at the end.
+    entries = extendArray(entries, response.result.value);
+    log.debug('Sending batch of readDirectory data');
+    successFn(response.result.value, response.hasMore);
+  }.bind(this);
+
+  this.sendMessage_('readDirectory', [options], processDataFn)
       .then(
-          function(response) {
-            log.info('readDirectory succeeded');
-
-            // Convert the date types to be dates from string
-            response.result.value = response.result.value.map(function(elem) {
-              elem.modificationTime = new Date(elem.modificationTime * 1000);
-
-              return elem;
-            });
-
-            console.log(response.result.value);
-
+          function() {
+            log.debug('readDirectory succeeded.');
             this.metadataCache.cacheDirectoryContents(
-                options.fileSystemId, options.directoryPath,
-                response.result.value);
-
-            // NOTE: If this ever supports hasMore the way the caching is done
-            // must also change to avoid overwriting with each batch.
-            var hasMore = false;
-            successFn(response.result.value, hasMore);
+              options.fileSystemId, options.directoryPath, entries);
           }.bind(this),
           function(err) {
             log.error('readDirectory failed with ' + err);

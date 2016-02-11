@@ -28,15 +28,22 @@ namespace NaclFsp {
 
 class EntryMetadata {
  public:
-  EntryMetadata() {}
+  EntryMetadata() : size(-1.0), modificationTime(-1) {}
 
   bool isDirectory;
   std::string name;
+  std::string fullPath;
   double size;
 
   int modificationTime;
   std::string mimeType;
   std::string thumbnail;
+
+  /**
+   * When stat info is populated size will be >=0. When this
+   * returns true only name and isDirectory are populated.
+   */
+  bool hasStatInfo() { return this->size >= 0; }
 };
 
 class INaclFsp {
@@ -56,7 +63,7 @@ class INaclFsp {
                        pp::VarDictionary* result) = 0;
   virtual void getMetadata(const GetMetadataOptions& options,
                            pp::VarDictionary* result) = 0;
-  virtual void readDirectory(const ReadDirectoryOptions& options,
+  virtual bool readDirectory(const ReadDirectoryOptions& options, int messageId,
                              pp::VarDictionary* result) = 0;
   virtual void createDirectory(const CreateDirectoryOptions& options,
                                pp::VarDictionary* result) = 0;
