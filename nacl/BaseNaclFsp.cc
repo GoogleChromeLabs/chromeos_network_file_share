@@ -84,7 +84,7 @@ void BaseNaclFsp::HandleMessage(pp::Var var_message) {
     } else if (functionName == "readFile") {
       ReadFileOptions options;
       options.Set(optionsDict);
-      this->readFile(options, &result);
+      resultsAlreadySent = this->readFile(options, messageId, &result);
     } else if (functionName == "writeFile") {
       WriteFileOptions options;
       options.Set(optionsDict);

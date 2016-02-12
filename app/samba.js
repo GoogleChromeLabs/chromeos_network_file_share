@@ -434,14 +434,15 @@ SambaClient.prototype.closeFileHandler = function(options, successFn, errorFn) {
 SambaClient.prototype.readFileHandler = function(options, successFn, errorFn) {
   log.debug('readFileHandler called');
 
-  this.sendMessage_('readFile', [options])
+  var processDataFn = function(response) {
+    log.debug('sending readFile batch');
+    successFn(response.result.value, response.hasMore);
+  };
+
+  this.sendMessage_('readFile', [options], processDataFn)
       .then(
           function(response) {
             log.info('readFile succeeded');
-
-            // TODO(zentaro): hasMore
-            var hasMore = false;
-            successFn(response.result.value, hasMore);
           },
           function(err) {
             log.error('readFile failed with ' + err);

@@ -368,8 +368,10 @@ void SambaFsp::openFile(const OpenFileOptions& options,
   this->openFiles[options.requestId] = fileInfo;
 }
 
-void SambaFsp::readFile(const ReadFileOptions& options,
+bool SambaFsp::readFile(const ReadFileOptions& options,
+                        int messageId,
                         pp::VarDictionary* result) {
+  const size_t MAX_BYTES_PER_READ = 32 * 1024;
   this->logger.Info("readFile: " + Util::ToString(options.openRequestId) + "@" +
                     Util::ToString(options.offset));
 
@@ -390,12 +392,12 @@ void SambaFsp::readFile(const ReadFileOptions& options,
           smbc_lseek(openFileId, static_cast<int>(options.offset), SEEK_SET);
       if ((actualOffset < 0) || (actualOffset != options.offset)) {
         this->LogErrorAndSetErrorResult("readFile:smbc_lseek", result);
-        return;
+        return false;
       }
 
       if (actualOffset != options.offset) {
         setErrorResult("FAILED", result);
-        return;
+        return false;
       }
     } else {
       this->logger.Debug("readFiles: Skipped redundant seek");
@@ -414,58 +416,68 @@ void SambaFsp::readFile(const ReadFileOptions& options,
 
     this->logger.Info("readFiles req=" + Util::ToString(options.length) +
                       " reading=" + Util::ToString(totalBytesToRead));
-    pp::VarArrayBuffer buffer(totalBytesToRead);
 
-    const size_t MAX_BYTES_PER_READ = 128 * 1024;
-
-    // Nothing to do if 0 bytes requested.
-    if (totalBytesToRead > 0) {
-      void* buf = static_cast<void*>(buffer.Map());
-      size_t bytesLeftToRead = totalBytesToRead;
-
-      while (bytesLeftToRead > 0) {
-        // TODO(zentaro): Use min.
-        size_t bytesToRead = bytesLeftToRead < MAX_BYTES_PER_READ
-                                 ? bytesLeftToRead
-                                 : MAX_BYTES_PER_READ;
-
-        this->logger.Debug(
-            "readFiles: " + Util::ToString(totalBytesToRead - bytesLeftToRead) +
-            "-" + Util::ToString(totalBytesToRead - bytesLeftToRead +
-                                 bytesToRead - 1) +
-            " of " + Util::ToString(totalBytesToRead));
-        ssize_t bytesRead = smbc_read(openFileId, buf, bytesToRead);
-        this->logger.Info("readFiles:Done");
-        if (bytesRead < 0) {
-          it->second.offset = -1;
-          LogErrorAndSetErrorResult("readFile:smbc_read", result);
-          return;
-        }
-
-        if (static_cast<uint32_t>(bytesRead) != bytesToRead) {
-          // TODO(zentaro): Does smbc_read ever do a short read?
-          // Invalidate the offset to be same to force a seek if this file is
-          // read again.
-          it->second.offset = -1;
-          this->logger.Error("Read mismatch: req=" +
-                             Util::ToString(bytesToRead) + " got=" +
-                             Util::ToString(bytesRead));
-          setErrorResult("FAILED", result);
-          return;
-        }
-
-        it->second.offset += bytesRead;
-        bytesLeftToRead -= bytesRead;
-        buf = static_cast<void*>(static_cast<uint8_t*>(buf) + bytesRead);
-      }
+    // Just return an empty array buffer when requested 0.
+    if (totalBytesToRead <= 0) {
+      pp::VarArrayBuffer buffer(0);
+      this->setResultFromArrayBuffer(buffer, result);
+      return false;
     }
 
-    this->setResultFromArrayBuffer(buffer, result);
+    size_t bytesLeftToRead = totalBytesToRead;
+
+    while (bytesLeftToRead > 0) {
+      // TODO(zentaro): Use min.
+      size_t bytesToRead = bytesLeftToRead < MAX_BYTES_PER_READ
+                               ? bytesLeftToRead
+                               : MAX_BYTES_PER_READ;
+
+      this->logger.Debug(
+          "readFiles: " + Util::ToString(totalBytesToRead - bytesLeftToRead) +
+          "-" + Util::ToString(totalBytesToRead - bytesLeftToRead +
+                               bytesToRead - 1) +
+          " of " + Util::ToString(totalBytesToRead));
+
+      pp::VarDictionary batchResult;
+      pp::VarArrayBuffer buffer(bytesToRead);
+      void* buf = static_cast<void*>(buffer.Map());
+      ssize_t bytesRead = smbc_read(openFileId, buf, bytesToRead);
+      this->logger.Debug("readFiles:Done");
+
+      if (bytesRead < 0) {
+        it->second.offset = -1;
+        // TODO(zentaro): Might need to check for connection reset here and retry.
+        LogErrorAndSetErrorResult("readFile:smbc_read", result);
+        return false;
+      }
+
+      if (static_cast<uint32_t>(bytesRead) != bytesToRead) {
+        // TODO(zentaro): Does smbc_read ever do a short read?
+        // Invalidate the offset to be same to force a seek if this file is
+        // read again.
+        it->second.offset = -1;
+        this->logger.Error("Read mismatch: req=" +
+                           Util::ToString(bytesToRead) + " got=" +
+                           Util::ToString(bytesRead));
+        setErrorResult("FAILED", result);
+        return false;
+      }
+
+      it->second.offset += bytesRead;
+      bytesLeftToRead -= bytesRead;
+
+      bool hasMore = bytesLeftToRead > 0;
+      this->setResultFromArrayBuffer(buffer, &batchResult);
+      this->sendMessage("readFile", messageId, batchResult, hasMore);
+    }
   } else {
     // TODO(zentaro): Handle error.
     this->logger.Error("readFile: Invalid FD");
     this->setErrorResult("INVALID_OPERATION", result);
+    return false;
   }
+
+  return true;
 }
 
 void SambaFsp::closeFile(const CloseFileOptions& options,

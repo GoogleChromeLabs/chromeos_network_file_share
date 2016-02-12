@@ -90,7 +90,7 @@ class SambaFsp : public BaseNaclFsp {
                           pp::VarDictionary* result);
   virtual void openFile(const OpenFileOptions& options,
                         pp::VarDictionary* result);
-  virtual void readFile(const ReadFileOptions& options,
+  virtual bool readFile(const ReadFileOptions& options, int messageId,
                         pp::VarDictionary* result);
   virtual void closeFile(const CloseFileOptions& options,
                          pp::VarDictionary* result);
