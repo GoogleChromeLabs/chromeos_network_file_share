@@ -368,8 +368,7 @@ void SambaFsp::openFile(const OpenFileOptions& options,
   this->openFiles[options.requestId] = fileInfo;
 }
 
-bool SambaFsp::readFile(const ReadFileOptions& options,
-                        int messageId,
+bool SambaFsp::readFile(const ReadFileOptions& options, int messageId,
                         pp::VarDictionary* result) {
   const size_t MAX_BYTES_PER_READ = 32 * 1024;
   this->logger.Info("readFile: " + Util::ToString(options.openRequestId) + "@" +
@@ -434,8 +433,8 @@ bool SambaFsp::readFile(const ReadFileOptions& options,
 
       this->logger.Debug(
           "readFiles: " + Util::ToString(totalBytesToRead - bytesLeftToRead) +
-          "-" + Util::ToString(totalBytesToRead - bytesLeftToRead +
-                               bytesToRead - 1) +
+          "-" +
+          Util::ToString(totalBytesToRead - bytesLeftToRead + bytesToRead - 1) +
           " of " + Util::ToString(totalBytesToRead));
 
       pp::VarDictionary batchResult;
@@ -446,7 +445,8 @@ bool SambaFsp::readFile(const ReadFileOptions& options,
 
       if (bytesRead < 0) {
         it->second.offset = -1;
-        // TODO(zentaro): Might need to check for connection reset here and retry.
+        // TODO(zentaro): Might need to check for connection reset here and
+        // retry.
         LogErrorAndSetErrorResult("readFile:smbc_read", result);
         return false;
       }
@@ -456,9 +456,8 @@ bool SambaFsp::readFile(const ReadFileOptions& options,
         // Invalidate the offset to be same to force a seek if this file is
         // read again.
         it->second.offset = -1;
-        this->logger.Error("Read mismatch: req=" +
-                           Util::ToString(bytesToRead) + " got=" +
-                           Util::ToString(bytesRead));
+        this->logger.Error("Read mismatch: req=" + Util::ToString(bytesToRead) +
+                           " got=" + Util::ToString(bytesRead));
         setErrorResult("FAILED", result);
         return false;
       }
