@@ -134,6 +134,15 @@ function cloneObject(obj) {
   return newObj;
 }
 
+function getDefault(obj, fieldName, defaultValue) {
+  var value = obj[fieldName];
+  if (!isDef(value)) {
+    value = defaultValue;
+  }
+
+  return value;
+}
+
 function regexEscape(value) {
   return value.replace(/[-\/\\^$*+?.()|[/]{}]/g, '\\$&');
 }
