@@ -368,7 +368,8 @@ void SambaFsp::openFile(const OpenFileOptions& options,
   this->openFiles[options.requestId] = fileInfo;
 }
 
-void SambaFsp::readFile(const ReadFileOptions& options,
+bool SambaFsp::readFile(const ReadFileOptions& options,
+                        int messageId,
                         pp::VarDictionary* result) {
   this->logger.Info("readFile: " + Util::ToString(options.openRequestId) + "@" +
                     Util::ToString(options.offset));
@@ -390,12 +391,12 @@ void SambaFsp::readFile(const ReadFileOptions& options,
           smbc_lseek(openFileId, static_cast<int>(options.offset), SEEK_SET);
       if ((actualOffset < 0) || (actualOffset != options.offset)) {
         this->LogErrorAndSetErrorResult("readFile:smbc_lseek", result);
-        return;
+        return false;
       }
 
       if (actualOffset != options.offset) {
         setErrorResult("FAILED", result);
-        return;
+        return false;
       }
     } else {
       this->logger.Debug("readFiles: Skipped redundant seek");
@@ -439,7 +440,7 @@ void SambaFsp::readFile(const ReadFileOptions& options,
         if (bytesRead < 0) {
           it->second.offset = -1;
           LogErrorAndSetErrorResult("readFile:smbc_read", result);
-          return;
+          return false;
         }
 
         if (static_cast<uint32_t>(bytesRead) != bytesToRead) {
@@ -451,7 +452,7 @@ void SambaFsp::readFile(const ReadFileOptions& options,
                              Util::ToString(bytesToRead) + " got=" +
                              Util::ToString(bytesRead));
           setErrorResult("FAILED", result);
-          return;
+          return false;
         }
 
         it->second.offset += bytesRead;
@@ -466,6 +467,9 @@ void SambaFsp::readFile(const ReadFileOptions& options,
     this->logger.Error("readFile: Invalid FD");
     this->setErrorResult("INVALID_OPERATION", result);
   }
+
+  // TODO(zentaro): Change when streaming is implemented.
+  return false;
 }
 
 void SambaFsp::closeFile(const CloseFileOptions& options,
