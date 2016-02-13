@@ -337,23 +337,60 @@ SambaClient.prototype.unmount = function(options, successFn, errorFn) {
   return resolver.promise;
 };
 
+SambaClient.prototype.isThumbOnlyRequest_ = function(options) {
+  // After Chrome 50 additional options were added to specify whether
+  // certain data needs to be returned. If the fields don't exist
+  // then it defaults to true (ie. all the data must be provided).
+  var getDefaultTrue = function(fieldName) {
+    return getDefault(options, fieldName, true);
+  };
+
+  return options.thumbnail && !getDefaultTrue('name') &&
+      !getDefaultTrue('size') && !getDefaultTrue('modificationTime') &&
+      !getDefaultTrue('isDirectory') && !getDefaultTrue('mimeType');
+};
+
+SambaClient.prototype.isThumbOnlyRequest_ = function(options) {
+  // After Chrome 50 additional options were added to specify whether
+  // certain data needs to be returned. If the fields don't exist
+  // then it defaults to true (ie. all the data must be provided).
+  var getDefaultTrue = function(fieldName) {
+    return getDefault(options, fieldName, true);
+  };
+
+  return options.thumbnail && !getDefaultTrue('name') &&
+      !getDefaultTrue('size') && !getDefaultTrue('modificationTime') &&
+      !getDefaultTrue('isDirectory') && !getDefaultTrue('mimeType');
+};
+
 SambaClient.prototype.getMetadataHandler = function(
     options, successFn, errorFn) {
   log.debug('getMetadataHandler called');
+  // console.log(options);
+
   var cachedEntry = this.metadataCache.lookupMetadata(
       options.fileSystemId, options.entryPath);
 
   if (cachedEntry) {
     log.debug('Found cached entry for ' + options.entryPath);
-    if (!options.thumbnail) {
-      successFn(cachedEntry);
+    if (this.isThumbOnlyRequest_(options)) {
+      // If this request is just for a thumb then
+      // just return this simple object.
+      var thumbEntry = {'thumbnail': UNKNOWN_IMAGE_DATA_URI};
+
+      log.debug('Responding with thumb-only result');
+      successFn(thumbEntry);
     } else {
+      // TODO(zentaro): Support all field combinations.
+
       // If a thumb was requested clone the cached entry and put a dummy URI
       // in there. See comment below for further details.
-      var thumbEntry = cloneObject(cachedEntry);
-      thumbEntry['thumbnail'] = UNKNOWN_IMAGE_DATA_URI;
+      if (options.thumbnail) {
+        cachedEntry = cloneObject(cachedEntry);
+        cachedEntry['thumbnail'] = UNKNOWN_IMAGE_DATA_URI;
+      }
 
-      successFn(thumbEntry);
+      successFn(cachedEntry);
     }
 
     return;
@@ -411,7 +448,7 @@ SambaClient.prototype.readDirectoryHandler = function(
           function() {
             log.debug('readDirectory succeeded.');
             this.metadataCache.cacheDirectoryContents(
-              options.fileSystemId, options.directoryPath, entries);
+                options.fileSystemId, options.directoryPath, entries);
           }.bind(this),
           function(err) {
             log.error('readDirectory failed with ' + err);
@@ -441,9 +478,7 @@ SambaClient.prototype.readFileHandler = function(options, successFn, errorFn) {
 
   this.sendMessage_('readFile', [options], processDataFn)
       .then(
-          function(response) {
-            log.info('readFile succeeded');
-          },
+          function(response) { log.info('readFile succeeded'); },
           function(err) {
             log.error('readFile failed with ' + err);
 
