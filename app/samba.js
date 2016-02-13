@@ -23,6 +23,11 @@
 // the generic icon.
 var UNKNOWN_IMAGE_DATA_URI = 'data:image/png;base64,X';
 
+// The names of the fields in an EntryMetadata.
+var METADATA_FIELDS = [
+  'name', 'size', 'modificationTime', 'thumbnail', 'mimeType', 'isDirectory'
+];
+
 var SambaClient = function() {
   log.info('Initializing samba client');
   this.messageId_ = 0;
@@ -337,61 +342,39 @@ SambaClient.prototype.unmount = function(options, successFn, errorFn) {
   return resolver.promise;
 };
 
-SambaClient.prototype.isThumbOnlyRequest_ = function(options) {
-  // After Chrome 50 additional options were added to specify whether
-  // certain data needs to be returned. If the fields don't exist
-  // then it defaults to true (ie. all the data must be provided).
-  var getDefaultTrue = function(fieldName) {
-    return getDefault(options, fieldName, true);
+SambaClient.prototype.filterRequestedData_ = function(options, entry) {
+  var result = {};
+
+  var addFieldIfRequested = function(fieldName) {
+    if (getDefault(options, fieldName, true)) {
+      result[fieldName] = entry[fieldName];
+    }
   };
 
-  return options.thumbnail && !getDefaultTrue('name') &&
-      !getDefaultTrue('size') && !getDefaultTrue('modificationTime') &&
-      !getDefaultTrue('isDirectory') && !getDefaultTrue('mimeType');
-};
+  METADATA_FIELDS.forEach(addFieldIfRequested);
 
-SambaClient.prototype.isThumbOnlyRequest_ = function(options) {
-  // After Chrome 50 additional options were added to specify whether
-  // certain data needs to be returned. If the fields don't exist
-  // then it defaults to true (ie. all the data must be provided).
-  var getDefaultTrue = function(fieldName) {
-    return getDefault(options, fieldName, true);
-  };
+  // Workaround to prevent Files.app downloading the entire file
+  // to generate a thumb.
+  // The original entry won't have the thumbnail so inject a broken
+  // URI.
+  if (getDefault(options, 'thumbnail', true)) {
+    result['thumbnail'] = UNKNOWN_IMAGE_DATA_URI;
+  }
 
-  return options.thumbnail && !getDefaultTrue('name') &&
-      !getDefaultTrue('size') && !getDefaultTrue('modificationTime') &&
-      !getDefaultTrue('isDirectory') && !getDefaultTrue('mimeType');
+  return result;
 };
 
 SambaClient.prototype.getMetadataHandler = function(
     options, successFn, errorFn) {
   log.debug('getMetadataHandler called');
-  // console.log(options);
 
   var cachedEntry = this.metadataCache.lookupMetadata(
       options.fileSystemId, options.entryPath);
 
   if (cachedEntry) {
     log.debug('Found cached entry for ' + options.entryPath);
-    if (this.isThumbOnlyRequest_(options)) {
-      // If this request is just for a thumb then
-      // just return this simple object.
-      var thumbEntry = {'thumbnail': UNKNOWN_IMAGE_DATA_URI};
-
-      log.debug('Responding with thumb-only result');
-      successFn(thumbEntry);
-    } else {
-      // TODO(zentaro): Support all field combinations.
-
-      // If a thumb was requested clone the cached entry and put a dummy URI
-      // in there. See comment below for further details.
-      if (options.thumbnail) {
-        cachedEntry = cloneObject(cachedEntry);
-        cachedEntry['thumbnail'] = UNKNOWN_IMAGE_DATA_URI;
-      }
-
-      successFn(cachedEntry);
-    }
+    var result = this.filterRequestedData_(options, cachedEntry);
+    successFn(result);
 
     return;
   }
@@ -414,8 +397,10 @@ SambaClient.prototype.getMetadataHandler = function(
               response.result.value.thumbnail = UNKNOWN_IMAGE_DATA_URI;
             }
 
-            successFn(response.result.value);
-          },
+            var result =
+                this.filterRequestedData_(options, response.result.value);
+            successFn(result);
+          }.bind(this),
           function(err) {
             log.error('getMetadata failed with ' + err);
             errorFn(err);
