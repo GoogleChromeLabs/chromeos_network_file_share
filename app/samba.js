@@ -375,6 +375,17 @@ SambaClient.prototype.filterRequestedData_ = function(options, entry) {
   return result;
 };
 
+SambaClient.prototype.isEmptyRequest_ = function(options) {
+  // TODO(zentaro): Maybe clear the mimeType flag since this
+  // extension never delivers that data.
+  return options['fieldMask'] == 0;
+};
+
+SambaClient.prototype.isThumbOnlyRequest_ = function(options) {
+  // Identify when only a thumbnail is being requested.
+  return options['fieldMask'] == METADATA_FIELD_BITS['thumbnail'];
+};
+
 SambaClient.prototype.getMetadataHandler = function(
     options, successFn, errorFn) {
   log.debug('getMetadataHandler called');
@@ -394,6 +405,22 @@ SambaClient.prototype.getMetadataHandler = function(
   // they don't have to get marshalled.
   options['fieldMask'] = this.createFieldMask_(options);
   log.debug('GetMetadata Fields=' + options['fieldMask']);
+
+  if (this.isThumbOnlyRequest_(options)) {
+    // Assumption is that the files app would never do this
+    // on a non-existant file. Because if it did then
+    // the error callback should be called instead.
+    log.debug('Thumb only request.');
+    successFn({ 'thumbnail': UNKNOWN_IMAGE_DATA_URI });
+    return;
+  }
+
+  if (this.isEmptyRequest_(options)) {
+    // For now just log since it isn't clear why this happens.
+    // But in theory could short circuit here too.
+    // See crbug.com/587231
+    log.warning('Files app sent empty request');
+  }
 
   this.sendMessage_('getMetadata', [options])
       .then(
