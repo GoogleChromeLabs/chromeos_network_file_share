@@ -72,9 +72,13 @@ void GetMetadataOptions::Set(const pp::VarDictionary& optionsDict) {
   thumbnail = optionsDict.Get("thumbnail").AsBool();
 }
 
+void FieldMaskMixin::Set(const pp::VarDictionary& optionsDict) {
+  fieldMask = optionsDict.Get("fieldMask").AsInt();
+}
+
 void ReadDirectoryOptions::Set(const pp::VarDictionary& optionsDict) {
   DirectoryOperationOptions::Set(optionsDict);
-  fieldMask = optionsDict.Get("fieldMask").AsInt();
+  FieldMaskMixin::Set(optionsDict);
 }
 
 void CreateDirectoryOptions::Set(const pp::VarDictionary& optionsDict) {
