@@ -390,6 +390,11 @@ SambaClient.prototype.getMetadataHandler = function(
     return;
   }
 
+  // TODO(zentaro): Potentially could remove the raw fields so
+  // they don't have to get marshalled.
+  options['fieldMask'] = this.createFieldMask_(options);
+  log.debug('GetMetadata Fields=' + options['fieldMask']);
+
   this.sendMessage_('getMetadata', [options])
       .then(
           function(response) {
@@ -453,7 +458,7 @@ SambaClient.prototype.readDirectoryHandler = function(
   // TODO(zentaro): Potentially could remove the raw fields so
   // they don't have to get marshalled.
   options['fieldMask'] = this.createFieldMask_(options);
-  log.debug('Fields=' + options['fieldMask']);
+  log.debug('ReadDirectory Fields=' + options['fieldMask']);
 
   this.sendMessage_('readDirectory', [options], processDataFn)
       .then(

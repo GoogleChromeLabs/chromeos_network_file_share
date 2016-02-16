@@ -68,7 +68,11 @@ void UnmountOptions::Set(const pp::VarDictionary& optionsDict) {
 
 void GetMetadataOptions::Set(const pp::VarDictionary& optionsDict) {
   TrackedOperationOptions::Set(optionsDict);
+  FieldMaskMixin::Set(optionsDict);
   entryPath = optionsDict.Get("entryPath").AsString();
+
+  // TODO(zentaro): This is redundant now as there is a bit
+  // in the field mask.
   thumbnail = optionsDict.Get("thumbnail").AsBool();
 }
 

@@ -107,11 +107,14 @@ class FieldMaskMixin {
   };
 };
 
-class GetMetadataOptions : public TrackedOperationOptions {
+class GetMetadataOptions : public TrackedOperationOptions, public FieldMaskMixin {
  public:
   GetMetadataOptions() {}
   virtual void Set(const pp::VarDictionary& optionsDict);
   std::string entryPath;
+
+  // TODO(zentaro): This is redundant now since it is captured in a bit
+  // in the fieldMask.
   bool thumbnail;
 };
 

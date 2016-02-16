@@ -218,7 +218,7 @@ void SambaFsp::unmount(const UnmountOptions& options,
 
 void SambaFsp::getMetadata(const GetMetadataOptions& options,
                            pp::VarDictionary* result) {
-  this->logger.Info("getMetadata: " + options.entryPath);
+  this->logger.Info("getMetadata: " + options.entryPath + " mask=" + Util::ToString(options.fieldMask));
 
   std::string relativePath = options.entryPath;
 
