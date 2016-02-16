@@ -14,6 +14,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
+#include <stdint.h>
 
 namespace pp {
 class VarDictionary;
@@ -88,6 +89,15 @@ class UnmountOptions : public BaseOptions {
   virtual void Set(const pp::VarDictionary& optionsDict);
 };
 
+enum MetadataFields {
+  FIELD_NAME = 1,
+  FIELD_IS_DIRECTORY = 2,
+  FIELD_SIZE = 4,
+  FIELD_MODIFICATION_TIME = 8,
+  FIELD_THUMBNAIL = 16,
+  FIELD_MIME_TYPE = 32
+};
+
 class GetMetadataOptions : public TrackedOperationOptions {
  public:
   GetMetadataOptions() {}
@@ -100,6 +110,7 @@ class ReadDirectoryOptions : public DirectoryOperationOptions {
  public:
   ReadDirectoryOptions() {}
   virtual void Set(const pp::VarDictionary& optionsDict);
+  uint32_t fieldMask;
 };
 
 class CreateDirectoryOptions : public DirectoryOperationOptions {

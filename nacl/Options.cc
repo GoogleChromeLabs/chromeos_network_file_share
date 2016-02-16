@@ -74,6 +74,7 @@ void GetMetadataOptions::Set(const pp::VarDictionary& optionsDict) {
 
 void ReadDirectoryOptions::Set(const pp::VarDictionary& optionsDict) {
   DirectoryOperationOptions::Set(optionsDict);
+  fieldMask = optionsDict.Get("fieldMask").AsInt();
 }
 
 void CreateDirectoryOptions::Set(const pp::VarDictionary& optionsDict) {

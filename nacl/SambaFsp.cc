@@ -300,7 +300,7 @@ std::string SambaFsp::createCredentialLookupKey(
 
 bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
                              pp::VarDictionary* result) {
-  this->logger.Info("readDirectory: " + options.directoryPath);
+  this->logger.Info("readDirectory: " + options.directoryPath + " mask=" + Util::ToString(options.fieldMask));
   std::vector<EntryMetadata> entries;
   std::string relativePath = options.directoryPath;
 
