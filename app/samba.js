@@ -28,6 +28,17 @@ var METADATA_FIELDS = [
   'name', 'size', 'modificationTime', 'thumbnail', 'mimeType', 'isDirectory'
 ];
 
+// Mapping of field name to bits to use in a mask.
+// Must stay in sync with mapping on native side.
+var METADATA_FIELD_BITS = {
+  'name': 1,
+  'isDirectory': 2,
+  'size': 4,
+  'modificationTime': 8,
+  'thumbnail': 16,
+  'mimeType': 32
+};
+
 var SambaClient = function() {
   log.info('Initializing samba client');
   this.messageId_ = 0;
@@ -407,6 +418,17 @@ SambaClient.prototype.getMetadataHandler = function(
           });
 };
 
+SambaClient.prototype.createFieldMask_ = function(options) {
+  var mask = 0;
+  METADATA_FIELDS.forEach(function(fieldName) {
+    if (getDefault(options, fieldName, true)) {
+      mask |= METADATA_FIELD_BITS[fieldName];
+    }
+  });
+
+  return mask;
+};
+
 SambaClient.prototype.readDirectoryHandler = function(
     options, successFn, errorFn) {
   log.debug('readDirectoryHandler called');
@@ -427,6 +449,11 @@ SambaClient.prototype.readDirectoryHandler = function(
     log.debug('Sending batch of readDirectory data');
     successFn(response.result.value, response.hasMore);
   }.bind(this);
+
+  // TODO(zentaro): Potentially could remove the raw fields so
+  // they don't have to get marshalled.
+  options['fieldMask'] = this.createFieldMask_(options);
+  log.debug('Fields=' + options['fieldMask']);
 
   this.sendMessage_('readDirectory', [options], processDataFn)
       .then(
