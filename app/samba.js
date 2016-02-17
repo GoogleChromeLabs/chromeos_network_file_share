@@ -473,6 +473,10 @@ SambaClient.prototype.getMetadataHandler = function(
             if (updateCache) {
               log.debug('Updating cache entry for ' + options.entryPath);
               this.metadataCache.updateMetadata(options.fileSystemId, options.entryPath, response.result.value);
+            } else {
+              // This should be rare because typically the getMetadata calls
+              // happen shortly after the readDirectory within the cache timeout.
+              log.info('*** Complete cache miss for ' + options.entryPath);
             }
             successFn(result);
           }.bind(this),
