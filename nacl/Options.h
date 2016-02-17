@@ -121,10 +121,6 @@ class GetMetadataOptions : public TrackedOperationOptions,
   GetMetadataOptions() {}
   virtual void Set(const pp::VarDictionary& optionsDict);
   std::string entryPath;
-
-  // TODO(zentaro): This is redundant now since it is captured in a bit
-  // in the fieldMask.
-  bool thumbnail;
 };
 
 class ReadDirectoryOptions : public DirectoryOperationOptions,
