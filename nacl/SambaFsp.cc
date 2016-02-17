@@ -218,7 +218,8 @@ void SambaFsp::unmount(const UnmountOptions& options,
 
 void SambaFsp::getMetadata(const GetMetadataOptions& options,
                            pp::VarDictionary* result) {
-  this->logger.Info("getMetadata: " + options.entryPath + " mask=" + Util::ToString(options.fieldMask));
+  this->logger.Info("getMetadata: " + options.entryPath + " mask=" +
+                    Util::ToString(options.fieldMask));
 
   std::string relativePath = options.entryPath;
 
@@ -300,7 +301,8 @@ std::string SambaFsp::createCredentialLookupKey(
 
 bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
                              pp::VarDictionary* result) {
-  this->logger.Info("readDirectory: " + options.directoryPath + " mask=" + Util::ToString(options.fieldMask));
+  this->logger.Info("readDirectory: " + options.directoryPath + " mask=" +
+                    Util::ToString(options.fieldMask));
   std::vector<EntryMetadata> entries;
   std::string relativePath = options.directoryPath;
 

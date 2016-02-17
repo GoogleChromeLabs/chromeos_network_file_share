@@ -416,7 +416,7 @@ SambaClient.prototype.getMetadataHandler = function(
     // on a non-existant file. Because if it did then
     // the error callback should be called instead.
     log.debug('Thumb only request.');
-    successFn({ 'thumbnail': UNKNOWN_IMAGE_DATA_URI });
+    successFn({'thumbnail': UNKNOWN_IMAGE_DATA_URI});
     return;
   }
 

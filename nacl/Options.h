@@ -13,8 +13,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <string>
 #include <stdint.h>
+#include <string>
 
 namespace pp {
 class VarDictionary;
@@ -92,6 +92,7 @@ class UnmountOptions : public BaseOptions {
 class FieldMaskMixin {
  protected:
   FieldMaskMixin() : fieldMask(0) {}
+
  public:
   uint32_t fieldMask;
 
@@ -107,7 +108,8 @@ class FieldMaskMixin {
   };
 };
 
-class GetMetadataOptions : public TrackedOperationOptions, public FieldMaskMixin {
+class GetMetadataOptions : public TrackedOperationOptions,
+                           public FieldMaskMixin {
  public:
   GetMetadataOptions() {}
   virtual void Set(const pp::VarDictionary& optionsDict);
@@ -118,7 +120,8 @@ class GetMetadataOptions : public TrackedOperationOptions, public FieldMaskMixin
   bool thumbnail;
 };
 
-class ReadDirectoryOptions : public DirectoryOperationOptions, public FieldMaskMixin {
+class ReadDirectoryOptions : public DirectoryOperationOptions,
+                             public FieldMaskMixin {
  public:
   ReadDirectoryOptions() {}
   virtual void Set(const pp::VarDictionary& optionsDict);
