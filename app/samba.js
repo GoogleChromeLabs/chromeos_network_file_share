@@ -386,6 +386,11 @@ SambaClient.prototype.isThumbOnlyRequest_ = function(options) {
   return options['fieldMask'] == METADATA_FIELD_BITS['thumbnail'];
 };
 
+SambaClient.prototype.isMimeTypeOnlyRequest_ = function(options) {
+  // Identify when only a mimeType is being requested.
+  return options['fieldMask'] == METADATA_FIELD_BITS['mimeType'];
+};
+
 SambaClient.prototype.getMetadataHandler = function(
     options, successFn, errorFn) {
   log.debug('getMetadataHandler called');
@@ -412,6 +417,14 @@ SambaClient.prototype.getMetadataHandler = function(
     // the error callback should be called instead.
     log.debug('Thumb only request.');
     successFn({ 'thumbnail': UNKNOWN_IMAGE_DATA_URI });
+    return;
+  }
+
+  if (this.isMimeTypeOnlyRequest_(options)) {
+    // This extension doesn't know mime types so always return
+    // nothing.
+    log.debug('Mime type only request');
+    successFn({});
     return;
   }
 
