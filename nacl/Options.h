@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
 
 namespace pp {
 class VarDictionary;
@@ -121,6 +122,14 @@ class GetMetadataOptions : public TrackedOperationOptions,
   GetMetadataOptions() {}
   virtual void Set(const pp::VarDictionary& optionsDict);
   std::string entryPath;
+};
+
+class BatchGetMetadataOptions : public TrackedOperationOptions,
+                           public FieldMaskMixin {
+ public:
+  BatchGetMetadataOptions() {}
+  virtual void Set(const pp::VarDictionary& optionsDict);
+  std::vector<std::string> entries;
 };
 
 class ReadDirectoryOptions : public DirectoryOperationOptions,

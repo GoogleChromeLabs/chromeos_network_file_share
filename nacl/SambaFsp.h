@@ -72,6 +72,8 @@ class SambaFsp : public BaseNaclFsp {
                        pp::VarDictionary* result);
   virtual void getMetadata(const GetMetadataOptions& options,
                            pp::VarDictionary* result);
+  virtual void batchGetMetadata(const BatchGetMetadataOptions& options,
+                           pp::VarDictionary* result);
   virtual bool readDirectory(const ReadDirectoryOptions& options, int messageId,
                              pp::VarDictionary* result);
   virtual void createDirectory(const CreateDirectoryOptions& options,

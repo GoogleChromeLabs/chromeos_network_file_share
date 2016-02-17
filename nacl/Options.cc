@@ -16,6 +16,7 @@
 #include "Options.h"
 
 #include "ppapi/cpp/var.h"
+#include "ppapi/cpp/var_array.h"
 #include "ppapi/cpp/var_array_buffer.h"
 #include "ppapi/cpp/var_dictionary.h"
 
@@ -70,6 +71,16 @@ void GetMetadataOptions::Set(const pp::VarDictionary& optionsDict) {
   TrackedOperationOptions::Set(optionsDict);
   FieldMaskMixin::Set(optionsDict);
   entryPath = optionsDict.Get("entryPath").AsString();
+}
+
+void BatchGetMetadataOptions::Set(const pp::VarDictionary& optionsDict) {
+  TrackedOperationOptions::Set(optionsDict);
+  FieldMaskMixin::Set(optionsDict);
+  pp::VarArray entriesArray(optionsDict.Get("entries"));
+
+  for (size_t i = 0; i < entriesArray.GetLength(); i++) {
+    entries.push_back(entriesArray.Get(i).AsString());
+  }
 }
 
 void FieldMaskMixin::Set(const pp::VarDictionary& optionsDict) {

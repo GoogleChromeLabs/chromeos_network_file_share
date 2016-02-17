@@ -253,6 +253,11 @@ void SambaFsp::getMetadata(const GetMetadataOptions& options,
   this->setResultFromEntryMetadata(entry, result);
 }
 
+void SambaFsp::batchGetMetadata(const BatchGetMetadataOptions& options,
+                           pp::VarDictionary* result) {
+  throw "Not Implemented";
+}
+
 void SambaFsp::LogErrorAndSetErrorResult(std::string operationName,
                                          pp::VarDictionary* result) {
   this->logger.Error("Error performing " + operationName + ": errno=" +
