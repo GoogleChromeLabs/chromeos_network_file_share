@@ -669,11 +669,15 @@ bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
       if (isFile || isDirectory) {
         EntryMetadata entry;
         entry.name = dirent->name;
-        entry.fullPath = childFullPath;
-        entry.isDirectory = isDirectory;
-        // this->logger.Debug("readDir: " + Util::ToString(itemCount) + ") " +
-        //                    this->stringify(entry));
-        entries->push_back(entry);
+
+        // Don't add . or .. to the list.
+        if (entry.name != "." && entry.name != "..") {
+          entry.fullPath = childFullPath;
+          entry.isDirectory = isDirectory;
+          // this->logger.Debug("readDir: " + Util::ToString(itemCount) + ") " +
+          //                    this->stringify(entry));
+          entries->push_back(entry);
+        }
       } else {
         std::string dirType = this->mapDirectoryTypeToString(dirent->smbc_type);
         this->logger.Debug("readDir: " + Util::ToString(itemCount) +
