@@ -405,6 +405,13 @@ SambaClient.prototype.getMetadataHandler = function(
   options['fieldMask'] = this.createFieldMask_(options);
   log.debug('GetMetadata ' + options.entryPath + ' Fields=' + options['fieldMask']);
 
+  if (this.isEmptyRequest_(options)) {
+    // For now just log since it isn't clear why this happens.
+    // But in theory could short circuit here too.
+    // See crbug.com/587231
+    log.warning('Files app sent empty request');
+  }
+
   var updateCache = false;
   var cachedEntry = this.metadataCache.lookupMetadata(
       options.fileSystemId, options.entryPath);
@@ -441,13 +448,6 @@ SambaClient.prototype.getMetadataHandler = function(
     log.debug('Mime type only request');
     successFn({});
     return;
-  }
-
-  if (this.isEmptyRequest_(options)) {
-    // For now just log since it isn't clear why this happens.
-    // But in theory could short circuit here too.
-    // See crbug.com/587231
-    log.warning('Files app sent empty request');
   }
 
   this.sendMessage_('getMetadata', [options])
