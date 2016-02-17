@@ -73,6 +73,10 @@ void BaseNaclFsp::HandleMessage(pp::Var var_message) {
       GetMetadataOptions options;
       options.Set(optionsDict);
       this->getMetadata(options, &result);
+    } else if (functionName == "batchGetMetadata") {
+      BatchGetMetadataOptions options;
+      options.Set(optionsDict);
+      this->batchGetMetadata(options, &result);
     } else if (functionName == "readDirectory") {
       ReadDirectoryOptions options;
       options.Set(optionsDict);
