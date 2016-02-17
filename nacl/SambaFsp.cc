@@ -351,8 +351,8 @@ void SambaFsp::openFile(const OpenFileOptions& options,
   }
 
   struct stat statInfo;
-  if (smbc_stat(fullPath.c_str(), &statInfo) < 0) {
-    this->LogErrorAndSetErrorResult("openFile:smbc_stat", result);
+  if (smbc_fstat(openFileId, &statInfo) < 0) {
+    this->LogErrorAndSetErrorResult("openFile:smbc_fstat", result);
     return;
   }
 
