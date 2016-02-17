@@ -391,25 +391,40 @@ SambaClient.prototype.isMimeTypeOnlyRequest_ = function(options) {
   return options['fieldMask'] == METADATA_FIELD_BITS['mimeType'];
 };
 
+SambaClient.prototype.requestNeedsStat_ = function(options) {
+  // Identify when this request needs data from stat() (ie. size or
+  // modificationTime).
+  return ((options['fieldMask'] & METADATA_FIELD_BITS['size']) != 0) ||
+      ((options['fieldMask'] & METADATA_FIELD_BITS['modificationTime']) != 0);
+};
+
 SambaClient.prototype.getMetadataHandler = function(
     options, successFn, errorFn) {
-  log.debug('getMetadataHandler called');
+  // TODO(zentaro): Potentially could remove the raw fields so
+  // they don't have to get marshalled.
+  options['fieldMask'] = this.createFieldMask_(options);
+  log.debug('GetMetadata ' + options.entryPath + ' Fields=' + options['fieldMask']);
 
+  var updateCache = false;
   var cachedEntry = this.metadataCache.lookupMetadata(
       options.fileSystemId, options.entryPath);
 
   if (cachedEntry) {
-    log.debug('Found cached entry for ' + options.entryPath);
-    var result = this.filterRequestedData_(options, cachedEntry);
-    successFn(result);
+    var cacheHasStat = (cachedEntry.size != -1);
+    if (cacheHasStat || !this.requestNeedsStat_(options)) {
+      // Either the cache already has stat() info or the request
+      // doesn't need it.
+      log.debug('Found cached entry for ' + options.entryPath);
+      var result = this.filterRequestedData_(options, cachedEntry);
+      successFn(result);
 
-    return;
+      return;
+    } else {
+      // When the result comes back update the cache with the
+      // stat() info.
+      updateCache = true;
+    }
   }
-
-  // TODO(zentaro): Potentially could remove the raw fields so
-  // they don't have to get marshalled.
-  options['fieldMask'] = this.createFieldMask_(options);
-  log.debug('GetMetadata Fields=' + options['fieldMask']);
 
   if (this.isThumbOnlyRequest_(options)) {
     // Assumption is that the files app would never do this
@@ -455,6 +470,10 @@ SambaClient.prototype.getMetadataHandler = function(
 
             var result =
                 this.filterRequestedData_(options, response.result.value);
+            if (updateCache) {
+              log.debug('Updating cache entry for ' + options.entryPath);
+              this.metadataCache.updateMetadata(options.fileSystemId, options.entryPath, response.result.value);
+            }
             successFn(result);
           }.bind(this),
           function(err) {

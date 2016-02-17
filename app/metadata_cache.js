@@ -65,6 +65,16 @@ MetadataCache.prototype.lookupMetadata = function(fileSystemId, entryPath) {
   return dirCache['entries'][pathParts['name']] || null;
 };
 
+MetadataCache.prototype.updateMetadata = function(fileSystemId, entryPath, entry) {
+  var pathParts = this.splitEntryPath_(entryPath);
+  var dirCache = this.getDirectoryCache_(fileSystemId, pathParts);
+
+  // TODO(zentaro): Consider having separate expirations on metadata entries.
+  if (dirCache) {
+    dirCache['entries'][pathParts['name']] = entry;
+  }
+};
+
 MetadataCache.prototype.invalidateEntry = function(fileSystemId, entryPath) {
   var pathParts = this.splitEntryPath_(entryPath);
   var dirCache = this.getDirectoryCache_(fileSystemId, pathParts);

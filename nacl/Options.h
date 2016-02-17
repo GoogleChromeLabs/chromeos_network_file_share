@@ -98,6 +98,13 @@ class FieldMaskMixin {
 
   virtual void Set(const pp::VarDictionary& optionsDict);
 
+  // If either size or modification time is required then
+  // a call to stat() is required.
+  bool needsStat() const {
+    return ((this->fieldMask & FIELD_SIZE) != 0) &&
+        ((this->fieldMask & FIELD_MODIFICATION_TIME) != 0);
+  }
+
   enum MetadataFields {
     FIELD_NAME = 1,
     FIELD_IS_DIRECTORY = 2,

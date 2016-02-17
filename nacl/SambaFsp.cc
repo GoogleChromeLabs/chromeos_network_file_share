@@ -320,15 +320,25 @@ bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
 
   // Just short circuit when there is nothing to do.
   if (entries.size() == 0) {
-    this->setResultFromEntryMetadataVector(entries.end(), entries.end(),
+    this->setResultFromEntryMetadataVector(entries.begin(), entries.end(),
                                            result);
     return false;
   }
 
-  this->statAndStreamEntryMetadata(messageId, &entries);
-  this->logger.Debug("readDirectory: COMPLETE " + fullPath);
-
-  return true;
+  if (options.needsStat()) {
+    // If size or modification time was requested entries are stat()'d
+    // and streamed in batches.
+    this->statAndStreamEntryMetadata(messageId, &entries);
+    this->logger.Debug("readDirectory: with stat COMPLETE " + fullPath);
+    return true;
+  } else {
+    // When stat() information is not required just return the
+    // info from getdents (name and isDir).
+    this->setResultFromEntryMetadataVector(entries.begin(), entries.end(),
+                                           result);
+    this->logger.Debug("readDirectory: no stat COMPLETE " + fullPath);
+    return false;
+  }
 }
 
 void SambaFsp::openFile(const OpenFileOptions& options,
