@@ -23,6 +23,22 @@
 // the generic icon.
 var UNKNOWN_IMAGE_DATA_URI = 'data:image/png;base64,X';
 
+// The names of the fields in an EntryMetadata.
+var METADATA_FIELDS = [
+  'name', 'size', 'modificationTime', 'thumbnail', 'mimeType', 'isDirectory'
+];
+
+// Mapping of field name to bits to use in a mask.
+// Must stay in sync with mapping on native side.
+var METADATA_FIELD_BITS = {
+  'name': 1,
+  'isDirectory': 2,
+  'size': 4,
+  'modificationTime': 8,
+  'thumbnail': 16,
+  'mimeType': 32
+};
+
 var SambaClient = function() {
   log.info('Initializing samba client');
   this.messageId_ = 0;
@@ -337,25 +353,156 @@ SambaClient.prototype.unmount = function(options, successFn, errorFn) {
   return resolver.promise;
 };
 
+SambaClient.prototype.filterRequestedData_ = function(options, entry) {
+  var result = {};
+
+  var addFieldIfRequested = function(fieldName) {
+    if (getDefault(options, fieldName, true)) {
+      result[fieldName] = entry[fieldName];
+    }
+  };
+
+  METADATA_FIELDS.forEach(addFieldIfRequested);
+
+  // Workaround to prevent Files.app downloading the entire file
+  // to generate a thumb.
+  // The original entry won't have the thumbnail so inject a broken
+  // URI.
+  if (getDefault(options, 'thumbnail', true)) {
+    result['thumbnail'] = UNKNOWN_IMAGE_DATA_URI;
+  }
+
+  return result;
+};
+
+SambaClient.prototype.isEmptyRequest_ = function(options) {
+  // TODO(zentaro): Maybe clear the mimeType flag since this
+  // extension never delivers that data.
+  return options['fieldMask'] == 0;
+};
+
+SambaClient.prototype.isThumbOnlyRequest_ = function(options) {
+  // Identify when only a thumbnail is being requested.
+  return options['fieldMask'] == METADATA_FIELD_BITS['thumbnail'];
+};
+
+SambaClient.prototype.isMimeTypeOnlyRequest_ = function(options) {
+  // Identify when only a mimeType is being requested.
+  return options['fieldMask'] == METADATA_FIELD_BITS['mimeType'];
+};
+
+SambaClient.prototype.requestNeedsStat_ = function(options) {
+  // Identify when this request needs data from stat() (ie. size or
+  // modificationTime).
+  return ((options['fieldMask'] & METADATA_FIELD_BITS['size']) != 0) ||
+      ((options['fieldMask'] & METADATA_FIELD_BITS['modificationTime']) != 0);
+};
+
 SambaClient.prototype.getMetadataHandler = function(
     options, successFn, errorFn) {
-  log.debug('getMetadataHandler called');
+  // TODO(zentaro): Potentially could remove the raw fields so
+  // they don't have to get marshalled.
+  options['fieldMask'] = this.createFieldMask_(options);
+  // log.debug('GetMetadata ' + options.entryPath + ' Fields=' +
+  // options['fieldMask']);
+
+  if (this.isEmptyRequest_(options)) {
+    // For now just log since it isn't clear why this happens.
+    // But in theory could short circuit here too.
+    // See crbug.com/587231
+    log.warning('Files app sent empty request');
+  }
+
+  var updateCache = false;
   var cachedEntry = this.metadataCache.lookupMetadata(
       options.fileSystemId, options.entryPath);
 
   if (cachedEntry) {
-    log.debug('Found cached entry for ' + options.entryPath);
-    if (!options.thumbnail) {
-      successFn(cachedEntry);
+    var cacheHasStat = (cachedEntry.size != -1);
+    if (cacheHasStat || !this.requestNeedsStat_(options)) {
+      // Either the cache already has stat() info or the request
+      // doesn't need it.
+      log.debug('Found cached entry for ' + options.entryPath);
+      var result = this.filterRequestedData_(options, cachedEntry);
+      successFn(result);
+
+      return;
     } else {
-      // If a thumb was requested clone the cached entry and put a dummy URI
-      // in there. See comment below for further details.
-      var thumbEntry = cloneObject(cachedEntry);
-      thumbEntry['thumbnail'] = UNKNOWN_IMAGE_DATA_URI;
+      var stat_resolver = cachedEntry['stat_resolver'];
+      if (stat_resolver) {
+        // Another batch already grabbed this entry so just wait for
+        // the promise to resolve.
+        stat_resolver.promise.then(
+            function(entry) {
+              log.debug('Resolved from a previous batch ' + entry['entryPath']);
+              var result = this.filterRequestedData_(options, entry);
+              successFn(result);
+              // TODO(zentaro): Is the delete redundant?
+              delete cachedEntry['stat_resolver'];
+            }.bind(this),
+            function(err) {
+              log.error('batchGetMetadata[stat_resolver] failed with ' + err);
+              errorFn(err);
+              delete cachedEntry['stat_resolver'];
+            });
 
-      successFn(thumbEntry);
+        return;
+      }
+
+      // When the result comes back update the cache with the
+      // stat() info.
+      updateCache = true;
+
+      // Since there is going to be a round trip anyway
+      // ask the cache for a batch of entries that could be updated.
+      var batch = this.metadataCache.getBatchToUpdate(
+          options.fileSystemId, options.entryPath, 8);
+      if (batch.length > 0) {
+        var batchOptions = cloneObject(options);
+        batchOptions['entries'] = batch;
+        delete batchOptions['entryPath'];
+
+        this.sendMessage_('batchGetMetadata', [batchOptions])
+            .then(
+                function(response) {
+                  log.info('batchGetMetadata succeeded');
+                  var sentRequestedResult = false;
+                  response.result.value.forEach(function(entry) {
+                    var result = this.handleStatEntry_(
+                        options, options.entryPath, entry);
+                    // The first item in the batch is the cache miss that
+                    // triggered
+                    // the batch so fire that off.
+                    if (!sentRequestedResult) {
+                      successFn(result);
+                      sentRequestedResult = true;
+                    }
+                  }.bind(this));
+                }.bind(this),
+                function(err) {
+                  log.error('batchGetMetadata failed with ' + err);
+                  errorFn(err);
+                });
+
+        return;
+      }
     }
+  }
 
+  if (this.isThumbOnlyRequest_(options)) {
+    // Assumption is that the files app would never do this
+    // on a non-existant file. Because if it did then
+    // the error callback should be called instead.
+    log.debug('Thumb only request.');
+    successFn({'thumbnail': UNKNOWN_IMAGE_DATA_URI});
+    return;
+  }
+
+  if (this.isMimeTypeOnlyRequest_(options)) {
+    // This extension doesn't know mime types so always return
+    // nothing.
+    log.debug('Mime type only request');
+    successFn({});
     return;
   }
 
@@ -364,25 +511,46 @@ SambaClient.prototype.getMetadataHandler = function(
           function(response) {
             log.info('getMetadata succeeded');
 
-            // Convert the date types to be dates from string
-            response.result.value.modificationTime =
-                new Date(response.result.value.modificationTime * 1000);
-
-            // Workaround to prevent Files.app downloading the entire file
-            // to generate a thumb.
-            // TODO(zentaro): Turns out the app will ask for the thumb for all
-            // files but ignore it for everything except images and vids. So
-            // don't bother sending it for other cases.
-            if (options.thumbnail) {
-              response.result.value.thumbnail = UNKNOWN_IMAGE_DATA_URI;
-            }
-
-            successFn(response.result.value);
-          },
+            var result = this.handleStatEntry_(
+                options, options.entryPath, response.result.value);
+            successFn(result);
+          }.bind(this),
           function(err) {
             log.error('getMetadata failed with ' + err);
             errorFn(err);
           });
+};
+
+SambaClient.prototype.handleStatEntry_ = function(options, entryPath, entry) {
+  // TODO(zentaro): updateCache may become redundant.
+
+  // Convert the date types to be dates from string
+  entry.modificationTime = new Date(entry.modificationTime * 1000);
+
+  // Workaround to prevent Files.app downloading the entire file
+  // to generate a thumb.
+  // TODO(zentaro): Turns out the app will ask for the thumb for all
+  // files but ignore it for everything except images and vids. So
+  // don't bother sending it for other cases.
+  if (options.thumbnail) {
+    entry.thumbnail = UNKNOWN_IMAGE_DATA_URI;
+  }
+
+  var result = this.filterRequestedData_(options, entry);
+  this.metadataCache.updateMetadata(options.fileSystemId, entryPath, entry);
+
+  return result;
+};
+
+SambaClient.prototype.createFieldMask_ = function(options) {
+  var mask = 0;
+  METADATA_FIELDS.forEach(function(fieldName) {
+    if (getDefault(options, fieldName, true)) {
+      mask |= METADATA_FIELD_BITS[fieldName];
+    }
+  });
+
+  return mask;
 };
 
 SambaClient.prototype.readDirectoryHandler = function(
@@ -398,20 +566,23 @@ SambaClient.prototype.readDirectoryHandler = function(
       return elem;
     });
 
-    console.log(response.result.value);
-
     // Accumulate the entries so they can be set in the cache at the end.
     entries = extendArray(entries, response.result.value);
     log.debug('Sending batch of readDirectory data');
     successFn(response.result.value, response.hasMore);
   }.bind(this);
 
+  // TODO(zentaro): Potentially could remove the raw fields so
+  // they don't have to get marshalled.
+  options['fieldMask'] = this.createFieldMask_(options);
+  // log.debug('ReadDirectory Fields=' + options['fieldMask']);
+
   this.sendMessage_('readDirectory', [options], processDataFn)
       .then(
           function() {
             log.debug('readDirectory succeeded.');
             this.metadataCache.cacheDirectoryContents(
-              options.fileSystemId, options.directoryPath, entries);
+                options.fileSystemId, options.directoryPath, entries);
           }.bind(this),
           function(err) {
             log.error('readDirectory failed with ' + err);
@@ -441,9 +612,7 @@ SambaClient.prototype.readFileHandler = function(options, successFn, errorFn) {
 
   this.sendMessage_('readFile', [options], processDataFn)
       .then(
-          function(response) {
-            log.info('readFile succeeded');
-          },
+          function(response) { log.info('readFile succeeded'); },
           function(err) {
             log.error('readFile failed with ' + err);
 

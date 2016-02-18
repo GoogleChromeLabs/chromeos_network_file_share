@@ -36,11 +36,19 @@ MetadataCache.prototype.cacheDirectoryContents = function(
   log.debug('Updating cache for ' + fileSystemId + '|' + directoryPath);
   this.cache[fileSystemId][directoryPath] = {
     'timeCached': window.performance.now(),
-    'entries': {}
+    'entries': {},
+    'incomplete_entries': {}
   };
 
   entries.forEach(function(entry) {
+    // Make sure the full entry path is stored in the entry for convenience.
+    entry['entryPath'] = this.joinEntryPath_(directoryPath, entry.name);
     this.cache[fileSystemId][directoryPath]['entries'][entry.name] = entry;
+    if (entry.size == -1) {
+      log.debug('Adding incomplete entry for ' + entry.name);
+      this.cache[fileSystemId][directoryPath]['incomplete_entries']
+                [entry.name] = true;
+    }
   }.bind(this));
 };
 
@@ -65,6 +73,76 @@ MetadataCache.prototype.lookupMetadata = function(fileSystemId, entryPath) {
   return dirCache['entries'][pathParts['name']] || null;
 };
 
+MetadataCache.prototype.getBatchToUpdate = function(
+    fileSystemId, entryPath, batchSize) {
+  var pathParts = this.splitEntryPath_(entryPath);
+  var dirCache = this.getDirectoryCache_(fileSystemId, pathParts);
+
+  if (!dirCache) {
+    return [];
+  }
+
+  var upto = 1;
+  var batch = [entryPath];
+  var toRemove = [];
+
+  // TODO(zentaro): Might also have to put a promise on the entry
+  // while a batch is in flight to prevent a race condition.
+  for (var name in dirCache['incomplete_entries']) {
+    if (name != pathParts['name']) {
+      var fullPath = this.joinEntryPath_(pathParts['path'], name);
+      batch.push(fullPath);
+    }
+
+    // Put a resolver in the cache entry that subsequent
+    // calls can wait on.
+    dirCache['entries'][name]['stat_resolver'] = getPromiseResolver();
+    toRemove.push(name);
+
+    if (upto++ >= batchSize) {
+      break;
+    }
+  }
+
+  toRemove.forEach(function(name) {
+    delete dirCache['incomplete_entries'][name];
+  });
+
+  return batch;
+};
+
+MetadataCache.prototype.updateMetadata = function(
+    fileSystemId, requestEntryPath, entry) {
+  var pathParts = this.splitEntryPath_(requestEntryPath);
+  var dirCache = this.getDirectoryCache_(fileSystemId, pathParts);
+
+  // requestEntryPath could be a sibling in the case of batch updates so
+  // always build the actual entry path explicitly.
+  entry['entryPath'] = this.joinEntryPath_(pathParts['path'], entry.name);
+  // TODO(zentaro): Is is actually necessary to store it in the entry?
+  log.debug('Updating metadata for ' + entry['entryPath']);
+
+  // TODO(zentaro): Consider having separate expirations on metadata entries.
+  if (dirCache) {
+    // Grab the resolver if it is there.
+    var oldEntry = dirCache['entries'][entry['name']];
+    if (oldEntry) {
+      var statResolver = oldEntry['stat_resolver'];
+      if (statResolver) {
+        log.debug('Firing pending stat_resolver for ' + entry['entryPath']);
+        statResolver.resolve(entry);
+      }
+    }
+
+    // Assumption is that updateMetadata is only called with complete entries.
+    dirCache['entries'][entry['name']] = entry;
+
+    // Remove from the incomplete_entries set.
+    log.debug('Removing incomplete ' + entry['entryPath']);
+    delete dirCache['incomplete_entries'][entry['name']];
+  }
+};
+
 MetadataCache.prototype.invalidateEntry = function(fileSystemId, entryPath) {
   var pathParts = this.splitEntryPath_(entryPath);
   var dirCache = this.getDirectoryCache_(fileSystemId, pathParts);
@@ -74,7 +152,6 @@ MetadataCache.prototype.invalidateEntry = function(fileSystemId, entryPath) {
   }
 
   log.debug('Invalidating metadata entry for ' + entryPath);
-  var dirCacheEntries = dirCache['entries'];
 
   // NOTE: Currently invalidation just deletes the entry in the dirCache which
   // is fine since we only use the cache for individual metadata requests. When
@@ -83,15 +160,16 @@ MetadataCache.prototype.invalidateEntry = function(fileSystemId, entryPath) {
   // TODO(zentaro): If this class supports using the dirCache to service readDir
   // requests then this would also invalidate the whole dir. Currently a readDir
   // would refresh the cache in all cases.
-  delete dirCacheEntries[pathParts['name']];
+  delete dirCache['entries'][pathParts['name']];
+  delete dirCache['incomplete_entries'][pathParts['name']];
 };
 
 // Returns how long in ms a directories cache entries are valid.
 // Currently just the same value. In theory later policy could mark certain
 // directories for longer cache time.
 MetadataCache.prototype.getCacheTimeMs_ = function(directoryPath) {
-  // 10 second lifetime.
-  return 10 * 1000;
+  // 30 second lifetime.
+  return 30 * 1000;
 };
 
 MetadataCache.prototype.getDirectoryCache_ = function(fileSystemId, pathParts) {
@@ -124,5 +202,13 @@ MetadataCache.prototype.splitEntryPath_ = function(entryPath) {
       'path': entryPath.substring(0, slashAt),
       'name': entryPath.substring(slashAt + 1)
     };
+  }
+};
+
+MetadataCache.prototype.joinEntryPath_ = function(path, name) {
+  if (path == '/') {
+    return path + name;
+  } else {
+    return path + '/' + name;
   }
 };

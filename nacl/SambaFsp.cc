@@ -218,38 +218,73 @@ void SambaFsp::unmount(const UnmountOptions& options,
 
 void SambaFsp::getMetadata(const GetMetadataOptions& options,
                            pp::VarDictionary* result) {
-  this->logger.Info("getMetadata: " + options.entryPath);
+  this->logger.Info("getMetadata: " + options.entryPath + " mask=" +
+                    Util::ToString(options.fieldMask));
 
-  std::string relativePath = options.entryPath;
+  std::string fullPath =
+      getFullPathFromRelativePath(options.fileSystemId, options.entryPath);
 
   EntryMetadata entry;
-  if (options.entryPath == "/") {
-    entry.isDirectory = true;
-    entry.name = "";
-    entry.size = 0;
-    entry.modificationTime = 0;
+  if (!this->getMetadataEntry(fullPath, &entry, result)) {
+    // Error was already set.
+    return;
+  }
+
+  this->setResultFromEntryMetadata(entry, result);
+}
+
+bool SambaFsp::getMetadataEntry(const std::string& fullPath,
+                                EntryMetadata* entry,
+                                pp::VarDictionary* result) {
+  const std::string& name = this->getNameFromPath(fullPath);
+  if (name == "") {
+    // This is the root.
+    entry->isDirectory = true;
+    entry->name = "";
+    entry->size = 0;
+    entry->modificationTime = 0;
   } else {
     struct stat statInfo;
-    entry.name = getNameFromPath(relativePath);
-    entry.size = 0;
-    std::string fullPath =
-        getFullPathFromRelativePath(options.fileSystemId, relativePath);
+    entry->name = name;
+    entry->size = 0;
+
     if (smbc_stat(fullPath.c_str(), &statInfo) < 0) {
-      this->LogErrorAndSetErrorResult("getMetadata:smbc_stat", result);
-      return;
+      this->LogErrorAndSetErrorResult("getMetadataEntry:smbc_stat", result);
+      return false;
     } else {
       // TODO(zentaro): Handle some special file types, links etc???
-      entry.isDirectory = S_ISDIR(statInfo.st_mode);
-      if (!entry.isDirectory) {
-        entry.size = statInfo.st_size;
+      entry->isDirectory = S_ISDIR(statInfo.st_mode);
+      if (!entry->isDirectory) {
+        entry->size = statInfo.st_size;
       }
 
-      entry.modificationTime = statInfo.st_mtime;
+      entry->modificationTime = statInfo.st_mtime;
     }
   }
 
-  this->logger.Info("getMeta: " + this->stringify(entry));
-  this->setResultFromEntryMetadata(entry, result);
+  this->logger.Debug("getMeta: " + this->stringify(*entry));
+  return true;
+}
+
+void SambaFsp::batchGetMetadata(const BatchGetMetadataOptions& options,
+                                pp::VarDictionary* result) {
+  std::vector<EntryMetadata> entries;
+
+  for (std::vector<std::string>::const_iterator it = options.entries.begin();
+       it != options.entries.end(); ++it) {
+    std::string fullPath =
+        getFullPathFromRelativePath(options.fileSystemId, *it);
+    EntryMetadata entry;
+    if (!this->getMetadataEntry(fullPath, &entry, result)) {
+      // Error was already set.
+      return;
+    }
+
+    entries.push_back(entry);
+  }
+
+  this->setResultFromEntryMetadataVector(entries.begin(), entries.end(),
+                                         result);
 }
 
 void SambaFsp::LogErrorAndSetErrorResult(std::string operationName,
@@ -300,7 +335,8 @@ std::string SambaFsp::createCredentialLookupKey(
 
 bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
                              pp::VarDictionary* result) {
-  this->logger.Info("readDirectory: " + options.directoryPath);
+  this->logger.Info("readDirectory: " + options.directoryPath + " mask=" +
+                    Util::ToString(options.fieldMask));
   std::vector<EntryMetadata> entries;
   std::string relativePath = options.directoryPath;
 
@@ -318,15 +354,25 @@ bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
 
   // Just short circuit when there is nothing to do.
   if (entries.size() == 0) {
-    this->setResultFromEntryMetadataVector(entries.end(), entries.end(),
+    this->setResultFromEntryMetadataVector(entries.begin(), entries.end(),
                                            result);
     return false;
   }
 
-  this->statAndStreamEntryMetadata(messageId, &entries);
-  this->logger.Debug("readDirectory: COMPLETE " + fullPath);
-
-  return true;
+  if (options.needsStat()) {
+    // If size or modification time was requested entries are stat()'d
+    // and streamed in batches.
+    this->statAndStreamEntryMetadata(messageId, &entries);
+    this->logger.Debug("readDirectory: with stat COMPLETE " + fullPath);
+    return true;
+  } else {
+    // When stat() information is not required just return the
+    // info from getdents (name and isDir).
+    this->setResultFromEntryMetadataVector(entries.begin(), entries.end(),
+                                           result);
+    this->logger.Debug("readDirectory: no stat COMPLETE " + fullPath);
+    return false;
+  }
 }
 
 void SambaFsp::openFile(const OpenFileOptions& options,
@@ -351,8 +397,8 @@ void SambaFsp::openFile(const OpenFileOptions& options,
   }
 
   struct stat statInfo;
-  if (smbc_stat(fullPath.c_str(), &statInfo) < 0) {
-    this->LogErrorAndSetErrorResult("openFile:smbc_stat", result);
+  if (smbc_fstat(openFileId, &statInfo) < 0) {
+    this->LogErrorAndSetErrorResult("openFile:smbc_fstat", result);
     return;
   }
 
@@ -368,8 +414,7 @@ void SambaFsp::openFile(const OpenFileOptions& options,
   this->openFiles[options.requestId] = fileInfo;
 }
 
-bool SambaFsp::readFile(const ReadFileOptions& options,
-                        int messageId,
+bool SambaFsp::readFile(const ReadFileOptions& options, int messageId,
                         pp::VarDictionary* result) {
   const size_t MAX_BYTES_PER_READ = 32 * 1024;
   this->logger.Info("readFile: " + Util::ToString(options.openRequestId) + "@" +
@@ -434,8 +479,8 @@ bool SambaFsp::readFile(const ReadFileOptions& options,
 
       this->logger.Debug(
           "readFiles: " + Util::ToString(totalBytesToRead - bytesLeftToRead) +
-          "-" + Util::ToString(totalBytesToRead - bytesLeftToRead +
-                               bytesToRead - 1) +
+          "-" +
+          Util::ToString(totalBytesToRead - bytesLeftToRead + bytesToRead - 1) +
           " of " + Util::ToString(totalBytesToRead));
 
       pp::VarDictionary batchResult;
@@ -446,7 +491,8 @@ bool SambaFsp::readFile(const ReadFileOptions& options,
 
       if (bytesRead < 0) {
         it->second.offset = -1;
-        // TODO(zentaro): Might need to check for connection reset here and retry.
+        // TODO(zentaro): Might need to check for connection reset here and
+        // retry.
         LogErrorAndSetErrorResult("readFile:smbc_read", result);
         return false;
       }
@@ -456,9 +502,8 @@ bool SambaFsp::readFile(const ReadFileOptions& options,
         // Invalidate the offset to be same to force a seek if this file is
         // read again.
         it->second.offset = -1;
-        this->logger.Error("Read mismatch: req=" +
-                           Util::ToString(bytesToRead) + " got=" +
-                           Util::ToString(bytesRead));
+        this->logger.Error("Read mismatch: req=" + Util::ToString(bytesToRead) +
+                           " got=" + Util::ToString(bytesRead));
         setErrorResult("FAILED", result);
         return false;
       }
@@ -668,11 +713,15 @@ bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
       if (isFile || isDirectory) {
         EntryMetadata entry;
         entry.name = dirent->name;
-        entry.fullPath = childFullPath;
-        entry.isDirectory = isDirectory;
-        // this->logger.Debug("readDir: " + Util::ToString(itemCount) + ") " +
-        //                    this->stringify(entry));
-        entries->push_back(entry);
+
+        // Don't add . or .. to the list.
+        if (entry.name != "." && entry.name != "..") {
+          entry.fullPath = childFullPath;
+          entry.isDirectory = isDirectory;
+          // this->logger.Debug("readDir: " + Util::ToString(itemCount) + ") " +
+          //                    this->stringify(entry));
+          entries->push_back(entry);
+        }
       } else {
         std::string dirType = this->mapDirectoryTypeToString(dirent->smbc_type);
         this->logger.Debug("readDir: " + Util::ToString(itemCount) +
@@ -873,7 +922,6 @@ std::string SambaFsp::getNameFromPath(std::string fullPath) {
     name = fullPath.substr(slashAt + 1, std::string::npos);
   }
 
-  this->logger.Info("getNameFromPath: Mapped " + fullPath + " -> " + name);
   return name;
 }
 
@@ -886,8 +934,6 @@ std::string SambaFsp::getFullPathFromRelativePath(
   // TODO(zentaro): Handle missing id.
   // TODO(zentaro): Handle trailing / on shareRoot
   std::string fullPath = mounts[fileSystemId].shareRoot + relativePath;
-  this->logger.Info("getFullPathFromRelativePath: Mapped " + relativePath +
-                    " -> " + fullPath);
 
   return fullPath;
 }

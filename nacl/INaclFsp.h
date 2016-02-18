@@ -63,6 +63,8 @@ class INaclFsp {
                        pp::VarDictionary* result) = 0;
   virtual void getMetadata(const GetMetadataOptions& options,
                            pp::VarDictionary* result) = 0;
+  virtual void batchGetMetadata(const BatchGetMetadataOptions& options,
+                                pp::VarDictionary* result) = 0;
   virtual bool readDirectory(const ReadDirectoryOptions& options, int messageId,
                              pp::VarDictionary* result) = 0;
   virtual void createDirectory(const CreateDirectoryOptions& options,
@@ -81,8 +83,7 @@ class INaclFsp {
                           pp::VarDictionary* result) = 0;
   virtual void openFile(const OpenFileOptions& options,
                         pp::VarDictionary* result) = 0;
-  virtual bool readFile(const ReadFileOptions& options,
-                        int messageId,
+  virtual bool readFile(const ReadFileOptions& options, int messageId,
                         pp::VarDictionary* result) = 0;
   virtual void closeFile(const CloseFileOptions& options,
                          pp::VarDictionary* result) = 0;

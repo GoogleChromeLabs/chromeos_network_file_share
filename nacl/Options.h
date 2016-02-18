@@ -13,7 +13,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <stdint.h>
 #include <string>
+#include <vector>
 
 namespace pp {
 class VarDictionary;
@@ -88,15 +90,50 @@ class UnmountOptions : public BaseOptions {
   virtual void Set(const pp::VarDictionary& optionsDict);
 };
 
-class GetMetadataOptions : public TrackedOperationOptions {
+class FieldMaskMixin {
+ protected:
+  FieldMaskMixin() : fieldMask(0) {}
+
+ public:
+  uint32_t fieldMask;
+
+  virtual void Set(const pp::VarDictionary& optionsDict);
+
+  // If either size or modification time is required then
+  // a call to stat() is required.
+  bool needsStat() const {
+    return ((this->fieldMask & FIELD_SIZE) != 0) &&
+           ((this->fieldMask & FIELD_MODIFICATION_TIME) != 0);
+  }
+
+  enum MetadataFields {
+    FIELD_NAME = 1,
+    FIELD_IS_DIRECTORY = 2,
+    FIELD_SIZE = 4,
+    FIELD_MODIFICATION_TIME = 8,
+    FIELD_THUMBNAIL = 16,
+    FIELD_MIME_TYPE = 32
+  };
+};
+
+class GetMetadataOptions : public TrackedOperationOptions,
+                           public FieldMaskMixin {
  public:
   GetMetadataOptions() {}
   virtual void Set(const pp::VarDictionary& optionsDict);
   std::string entryPath;
-  bool thumbnail;
 };
 
-class ReadDirectoryOptions : public DirectoryOperationOptions {
+class BatchGetMetadataOptions : public TrackedOperationOptions,
+                                public FieldMaskMixin {
+ public:
+  BatchGetMetadataOptions() {}
+  virtual void Set(const pp::VarDictionary& optionsDict);
+  std::vector<std::string> entries;
+};
+
+class ReadDirectoryOptions : public DirectoryOperationOptions,
+                             public FieldMaskMixin {
  public:
   ReadDirectoryOptions() {}
   virtual void Set(const pp::VarDictionary& optionsDict);
