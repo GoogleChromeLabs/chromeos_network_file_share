@@ -430,6 +430,15 @@ SambaClient.prototype.getMetadataHandler = function(
       // When the result comes back update the cache with the
       // stat() info.
       updateCache = true;
+
+      // Since there is going to be a round trip anyway
+      // ask the cache for a batch of entries that could be updated.
+      var batch = this.metadataCache.getBatchToUpdate(options.fileSystemId, options.entryPath, 8);
+      if (batch.length > 0) {
+        console.log('Batch');
+        console.log(batch);
+        console.log('----');
+      }
     }
   }
 

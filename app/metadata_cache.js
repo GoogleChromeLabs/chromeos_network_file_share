@@ -86,11 +86,11 @@ MetadataCache.prototype.getBatchToUpdate = function(fileSystemId, entryPath, bat
   // while a batch is in flight to prevent a race condition.
   for (var name in dirCache['incomplete_entries']) {
     if (name != pathParts['name']) {
-      var fullPath = pathParts['path'] + '/' + name;
-      batch.append(fullPath);
+      var fullPath = this.joinEntryPath_(pathParts['path'], name);
+      batch.push(fullPath);
     }
 
-    toRemove.append(name);
+    toRemove.push(name);
     if (upto++ >= batchSize) {
       break;
     }
@@ -177,5 +177,13 @@ MetadataCache.prototype.splitEntryPath_ = function(entryPath) {
       'path': entryPath.substring(0, slashAt),
       'name': entryPath.substring(slashAt + 1)
     };
+  }
+};
+
+MetadataCache.prototype.joinEntryPath_ = function(path, name) {
+  if (path == '/') {
+    return path + name;
+  } else {
+    return path + '/' + name;
   }
 };
