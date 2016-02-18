@@ -435,9 +435,32 @@ SambaClient.prototype.getMetadataHandler = function(
       // ask the cache for a batch of entries that could be updated.
       var batch = this.metadataCache.getBatchToUpdate(options.fileSystemId, options.entryPath, 8);
       if (batch.length > 0) {
-        console.log('Batch');
-        console.log(batch);
-        console.log('----');
+        var batchOptions = cloneObject(options);
+        batchOptions['entries'] = batch;
+        delete batchOptions['entryPath'];
+
+        this.sendMessage_('batchGetMetadata', [batchOptions])
+            .then(
+                function(response) {
+                  log.info('batchGetMetadata succeeded');
+                  var requestedResult = null;
+                  response.result.value.forEach(function(entry) {
+                    var result = this.handleStatEntry_(options, entry, updateCache);
+                    // The first item in the batch is the cache miss that triggered
+                    // the batch.
+                    if (requestedResult == null) {
+                      requestedResult = result;
+                    }
+                  }.bind(this));
+
+                  successFn(requestedResult);
+                }.bind(this),
+                function(err) {
+                  log.error('batchGetMetadata failed with ' + err);
+                  errorFn(err);
+                });
+
+        return;
       }
     }
   }

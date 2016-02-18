@@ -221,41 +221,68 @@ void SambaFsp::getMetadata(const GetMetadataOptions& options,
   this->logger.Info("getMetadata: " + options.entryPath + " mask=" +
                     Util::ToString(options.fieldMask));
 
-  std::string relativePath = options.entryPath;
+  std::string fullPath =
+        getFullPathFromRelativePath(options.fileSystemId, options.entryPath);
 
   EntryMetadata entry;
-  if (options.entryPath == "/") {
-    entry.isDirectory = true;
-    entry.name = "";
-    entry.size = 0;
-    entry.modificationTime = 0;
+  if (!this->getMetadataEntry(fullPath, &entry, result)) {
+    // Error was already set.
+    return;
+  }
+
+  this->setResultFromEntryMetadata(entry, result);
+}
+
+bool SambaFsp::getMetadataEntry(const std::string& fullPath,
+                         EntryMetadata* entry,
+                         pp::VarDictionary* result) {
+  const std::string& name = this->getNameFromPath(fullPath);
+  if (name == "") {
+    // This is the root.
+    entry->isDirectory = true;
+    entry->name = "";
+    entry->size = 0;
+    entry->modificationTime = 0;
   } else {
     struct stat statInfo;
-    entry.name = getNameFromPath(relativePath);
-    entry.size = 0;
-    std::string fullPath =
-        getFullPathFromRelativePath(options.fileSystemId, relativePath);
+    entry->name = name;
+    entry->size = 0;
+
     if (smbc_stat(fullPath.c_str(), &statInfo) < 0) {
-      this->LogErrorAndSetErrorResult("getMetadata:smbc_stat", result);
-      return;
+      this->LogErrorAndSetErrorResult("getMetadataEntry:smbc_stat", result);
+      return false;
     } else {
       // TODO(zentaro): Handle some special file types, links etc???
-      entry.isDirectory = S_ISDIR(statInfo.st_mode);
-      if (!entry.isDirectory) {
-        entry.size = statInfo.st_size;
+      entry->isDirectory = S_ISDIR(statInfo.st_mode);
+      if (!entry->isDirectory) {
+        entry->size = statInfo.st_size;
       }
 
-      entry.modificationTime = statInfo.st_mtime;
+      entry->modificationTime = statInfo.st_mtime;
     }
   }
 
-  this->logger.Info("getMeta: " + this->stringify(entry));
-  this->setResultFromEntryMetadata(entry, result);
+  this->logger.Info("getMeta: " + this->stringify(*entry));
+  return true;
 }
 
 void SambaFsp::batchGetMetadata(const BatchGetMetadataOptions& options,
                            pp::VarDictionary* result) {
-  throw "Not Implemented";
+  std::vector<EntryMetadata> entries;
+
+  for (std::vector<std::string>::const_iterator it = options.entries.begin(); it != options.entries.end(); ++it) {
+    std::string fullPath =
+        getFullPathFromRelativePath(options.fileSystemId, *it);
+    EntryMetadata entry;
+    if (!this->getMetadataEntry(fullPath, &entry, result)) {
+      // Error was already set.
+      return;
+    }
+
+    entries.push_back(entry);
+  }
+
+  this->setResultFromEntryMetadataVector(entries.begin(), entries.end(), result);
 }
 
 void SambaFsp::LogErrorAndSetErrorResult(std::string operationName,
