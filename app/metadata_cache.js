@@ -41,6 +41,8 @@ MetadataCache.prototype.cacheDirectoryContents = function(
   };
 
   entries.forEach(function(entry) {
+    // Make sure the full entry path is stored in the entry for convenience.
+    entry['entryPath'] = this.joinEntryPath_(directoryPath, entry.name);
     this.cache[fileSystemId][directoryPath]['entries'][entry.name] = entry;
     if (entry.size == -1) {
       log.debug('Adding incomplete entry for ' + entry.name);
@@ -90,7 +92,11 @@ MetadataCache.prototype.getBatchToUpdate = function(fileSystemId, entryPath, bat
       batch.push(fullPath);
     }
 
+    // Put a resolver in the cache entry that subsequent
+    // calls can wait on.
+    dirCache['entries'][name]['stat_resolver'] = getPromiseResolver();
     toRemove.push(name);
+
     if (upto++ >= batchSize) {
       break;
     }
@@ -103,18 +109,34 @@ MetadataCache.prototype.getBatchToUpdate = function(fileSystemId, entryPath, bat
   return batch;
 };
 
-MetadataCache.prototype.updateMetadata = function(fileSystemId, entryPath, entry) {
-  var pathParts = this.splitEntryPath_(entryPath);
+MetadataCache.prototype.updateMetadata = function(fileSystemId, requestEntryPath, entry) {
+  var pathParts = this.splitEntryPath_(requestEntryPath);
   var dirCache = this.getDirectoryCache_(fileSystemId, pathParts);
+
+  // requestEntryPath could be a sibling in the case of batch updates so
+  // always build the actual entry path explicitly.
+  entry['entryPath'] = this.joinEntryPath_(pathParts['path'], entry.name);
+  // TODO(zentaro): Is is actually necessary to store it in the entry?
+  log.debug('Updating metadata for ' + entry['entryPath']);
 
   // TODO(zentaro): Consider having separate expirations on metadata entries.
   if (dirCache) {
+    // Grab the resolver if it is there.
+    var oldEntry = dirCache['entries'][entry['name']];
+    if (oldEntry) {
+      var statResolver = oldEntry['stat_resolver'];
+      if (statResolver) {
+        log.debug('Firing pending stat_resolver for ' + entry['entryPath']);
+        statResolver.resolve(entry);
+      }
+    }
+
     // Assumption is that updateMetadata is only called with complete entries.
-    dirCache['entries'][pathParts['name']] = entry;
+    dirCache['entries'][entry['name']] = entry;
 
     // Remove from the incomplete_entries set.
-    log.debug('Removing incomplete ' + entryPath);
-    delete dirCache['incomplete_entries'][pathParts['name']];
+    log.debug('Removing incomplete ' + entry['entryPath']);
+    delete dirCache['incomplete_entries'][entry['name']];
   }
 };
 

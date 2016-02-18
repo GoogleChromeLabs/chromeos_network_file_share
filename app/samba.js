@@ -427,6 +427,26 @@ SambaClient.prototype.getMetadataHandler = function(
 
       return;
     } else {
+      var stat_resolver = cachedEntry['stat_resolver'];
+      if (stat_resolver) {
+        // Another batch already grabbed this entry so just wait for
+        // the promise to resolve.
+        stat_resolver.promise.then(function(entry) {
+          log.debug('Resolved from a previous batch ' + entry['entryPath']);
+          var result = this.filterRequestedData_(options, entry);
+          successFn(result);
+          // TODO(zentaro): Is the delete redundant?
+          delete cachedEntry['stat_resolver'];
+        }.bind(this),
+        function(err) {
+          log.error('batchGetMetadata[stat_resolver] failed with ' + err);
+          errorFn(err);
+          delete cachedEntry['stat_resolver'];
+        });
+
+        return;
+      }
+
       // When the result comes back update the cache with the
       // stat() info.
       updateCache = true;
@@ -443,17 +463,16 @@ SambaClient.prototype.getMetadataHandler = function(
             .then(
                 function(response) {
                   log.info('batchGetMetadata succeeded');
-                  var requestedResult = null;
+                  var sentRequestedResult = false;
                   response.result.value.forEach(function(entry) {
-                    var result = this.handleStatEntry_(options, entry, updateCache);
+                    var result = this.handleStatEntry_(options, options.entryPath, entry);
                     // The first item in the batch is the cache miss that triggered
-                    // the batch.
-                    if (requestedResult == null) {
-                      requestedResult = result;
+                    // the batch so fire that off.
+                    if (!sentRequestedResult) {
+                      successFn(result);
+                      sentRequestedResult = true;
                     }
                   }.bind(this));
-
-                  successFn(requestedResult);
                 }.bind(this),
                 function(err) {
                   log.error('batchGetMetadata failed with ' + err);
@@ -487,7 +506,7 @@ SambaClient.prototype.getMetadataHandler = function(
           function(response) {
             log.info('getMetadata succeeded');
 
-            var result = this.handleStatEntry_(options, response.result.value, updateCache);
+            var result = this.handleStatEntry_(options, options.entryPath, response.result.value);
             successFn(result);
           }.bind(this),
           function(err) {
@@ -496,7 +515,7 @@ SambaClient.prototype.getMetadataHandler = function(
           });
 };
 
-SambaClient.prototype.handleStatEntry_ = function(options, entry, updateCache) {
+SambaClient.prototype.handleStatEntry_ = function(options, entryPath, entry) {
   // TODO(zentaro): updateCache may become redundant.
 
   // Convert the date types to be dates from string
@@ -514,14 +533,7 @@ SambaClient.prototype.handleStatEntry_ = function(options, entry, updateCache) {
 
   var result =
       this.filterRequestedData_(options, entry);
-  if (updateCache) {
-    log.debug('Updating cache entry for ' + options.entryPath);
-    this.metadataCache.updateMetadata(options.fileSystemId, options.entryPath, entry);
-  } else {
-    // This should be rare because typically the getMetadata calls
-    // happen shortly after the readDirectory within the cache timeout.
-    log.info('*** Complete cache miss for ' + options.entryPath);
-  }
+  this.metadataCache.updateMetadata(options.fileSystemId, entryPath, entry);
 
   return result;
 };
