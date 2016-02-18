@@ -464,35 +464,43 @@ SambaClient.prototype.getMetadataHandler = function(
           function(response) {
             log.info('getMetadata succeeded');
 
-            // Convert the date types to be dates from string
-            response.result.value.modificationTime =
-                new Date(response.result.value.modificationTime * 1000);
-
-            // Workaround to prevent Files.app downloading the entire file
-            // to generate a thumb.
-            // TODO(zentaro): Turns out the app will ask for the thumb for all
-            // files but ignore it for everything except images and vids. So
-            // don't bother sending it for other cases.
-            if (options.thumbnail) {
-              response.result.value.thumbnail = UNKNOWN_IMAGE_DATA_URI;
-            }
-
-            var result =
-                this.filterRequestedData_(options, response.result.value);
-            if (updateCache) {
-              log.debug('Updating cache entry for ' + options.entryPath);
-              this.metadataCache.updateMetadata(options.fileSystemId, options.entryPath, response.result.value);
-            } else {
-              // This should be rare because typically the getMetadata calls
-              // happen shortly after the readDirectory within the cache timeout.
-              log.info('*** Complete cache miss for ' + options.entryPath);
-            }
+            var result = this.handleStatEntry_(options, response.result.value, updateCache);
             successFn(result);
           }.bind(this),
           function(err) {
             log.error('getMetadata failed with ' + err);
             errorFn(err);
           });
+};
+
+SambaClient.prototype.handleStatEntry_ = function(options, entry, updateCache) {
+  // TODO(zentaro): updateCache may become redundant.
+
+  // Convert the date types to be dates from string
+  entry.modificationTime =
+      new Date(entry.modificationTime * 1000);
+
+  // Workaround to prevent Files.app downloading the entire file
+  // to generate a thumb.
+  // TODO(zentaro): Turns out the app will ask for the thumb for all
+  // files but ignore it for everything except images and vids. So
+  // don't bother sending it for other cases.
+  if (options.thumbnail) {
+    entry.thumbnail = UNKNOWN_IMAGE_DATA_URI;
+  }
+
+  var result =
+      this.filterRequestedData_(options, entry);
+  if (updateCache) {
+    log.debug('Updating cache entry for ' + options.entryPath);
+    this.metadataCache.updateMetadata(options.fileSystemId, options.entryPath, entry);
+  } else {
+    // This should be rare because typically the getMetadata calls
+    // happen shortly after the readDirectory within the cache timeout.
+    log.info('*** Complete cache miss for ' + options.entryPath);
+  }
+
+  return result;
 };
 
 SambaClient.prototype.createFieldMask_ = function(options) {
