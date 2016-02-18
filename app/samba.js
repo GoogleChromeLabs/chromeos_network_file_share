@@ -403,7 +403,8 @@ SambaClient.prototype.getMetadataHandler = function(
   // TODO(zentaro): Potentially could remove the raw fields so
   // they don't have to get marshalled.
   options['fieldMask'] = this.createFieldMask_(options);
-  //log.debug('GetMetadata ' + options.entryPath + ' Fields=' + options['fieldMask']);
+  // log.debug('GetMetadata ' + options.entryPath + ' Fields=' +
+  // options['fieldMask']);
 
   if (this.isEmptyRequest_(options)) {
     // For now just log since it isn't clear why this happens.
@@ -431,18 +432,19 @@ SambaClient.prototype.getMetadataHandler = function(
       if (stat_resolver) {
         // Another batch already grabbed this entry so just wait for
         // the promise to resolve.
-        stat_resolver.promise.then(function(entry) {
-          log.debug('Resolved from a previous batch ' + entry['entryPath']);
-          var result = this.filterRequestedData_(options, entry);
-          successFn(result);
-          // TODO(zentaro): Is the delete redundant?
-          delete cachedEntry['stat_resolver'];
-        }.bind(this),
-        function(err) {
-          log.error('batchGetMetadata[stat_resolver] failed with ' + err);
-          errorFn(err);
-          delete cachedEntry['stat_resolver'];
-        });
+        stat_resolver.promise.then(
+            function(entry) {
+              log.debug('Resolved from a previous batch ' + entry['entryPath']);
+              var result = this.filterRequestedData_(options, entry);
+              successFn(result);
+              // TODO(zentaro): Is the delete redundant?
+              delete cachedEntry['stat_resolver'];
+            }.bind(this),
+            function(err) {
+              log.error('batchGetMetadata[stat_resolver] failed with ' + err);
+              errorFn(err);
+              delete cachedEntry['stat_resolver'];
+            });
 
         return;
       }
@@ -453,7 +455,8 @@ SambaClient.prototype.getMetadataHandler = function(
 
       // Since there is going to be a round trip anyway
       // ask the cache for a batch of entries that could be updated.
-      var batch = this.metadataCache.getBatchToUpdate(options.fileSystemId, options.entryPath, 8);
+      var batch = this.metadataCache.getBatchToUpdate(
+          options.fileSystemId, options.entryPath, 8);
       if (batch.length > 0) {
         var batchOptions = cloneObject(options);
         batchOptions['entries'] = batch;
@@ -465,8 +468,10 @@ SambaClient.prototype.getMetadataHandler = function(
                   log.info('batchGetMetadata succeeded');
                   var sentRequestedResult = false;
                   response.result.value.forEach(function(entry) {
-                    var result = this.handleStatEntry_(options, options.entryPath, entry);
-                    // The first item in the batch is the cache miss that triggered
+                    var result = this.handleStatEntry_(
+                        options, options.entryPath, entry);
+                    // The first item in the batch is the cache miss that
+                    // triggered
                     // the batch so fire that off.
                     if (!sentRequestedResult) {
                       successFn(result);
@@ -506,7 +511,8 @@ SambaClient.prototype.getMetadataHandler = function(
           function(response) {
             log.info('getMetadata succeeded');
 
-            var result = this.handleStatEntry_(options, options.entryPath, response.result.value);
+            var result = this.handleStatEntry_(
+                options, options.entryPath, response.result.value);
             successFn(result);
           }.bind(this),
           function(err) {
@@ -519,8 +525,7 @@ SambaClient.prototype.handleStatEntry_ = function(options, entryPath, entry) {
   // TODO(zentaro): updateCache may become redundant.
 
   // Convert the date types to be dates from string
-  entry.modificationTime =
-      new Date(entry.modificationTime * 1000);
+  entry.modificationTime = new Date(entry.modificationTime * 1000);
 
   // Workaround to prevent Files.app downloading the entire file
   // to generate a thumb.
@@ -531,8 +536,7 @@ SambaClient.prototype.handleStatEntry_ = function(options, entryPath, entry) {
     entry.thumbnail = UNKNOWN_IMAGE_DATA_URI;
   }
 
-  var result =
-      this.filterRequestedData_(options, entry);
+  var result = this.filterRequestedData_(options, entry);
   this.metadataCache.updateMetadata(options.fileSystemId, entryPath, entry);
 
   return result;
@@ -571,7 +575,7 @@ SambaClient.prototype.readDirectoryHandler = function(
   // TODO(zentaro): Potentially could remove the raw fields so
   // they don't have to get marshalled.
   options['fieldMask'] = this.createFieldMask_(options);
-  //log.debug('ReadDirectory Fields=' + options['fieldMask']);
+  // log.debug('ReadDirectory Fields=' + options['fieldMask']);
 
   this.sendMessage_('readDirectory', [options], processDataFn)
       .then(

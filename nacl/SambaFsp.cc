@@ -222,7 +222,7 @@ void SambaFsp::getMetadata(const GetMetadataOptions& options,
                     Util::ToString(options.fieldMask));
 
   std::string fullPath =
-        getFullPathFromRelativePath(options.fileSystemId, options.entryPath);
+      getFullPathFromRelativePath(options.fileSystemId, options.entryPath);
 
   EntryMetadata entry;
   if (!this->getMetadataEntry(fullPath, &entry, result)) {
@@ -234,8 +234,8 @@ void SambaFsp::getMetadata(const GetMetadataOptions& options,
 }
 
 bool SambaFsp::getMetadataEntry(const std::string& fullPath,
-                         EntryMetadata* entry,
-                         pp::VarDictionary* result) {
+                                EntryMetadata* entry,
+                                pp::VarDictionary* result) {
   const std::string& name = this->getNameFromPath(fullPath);
   if (name == "") {
     // This is the root.
@@ -267,10 +267,11 @@ bool SambaFsp::getMetadataEntry(const std::string& fullPath,
 }
 
 void SambaFsp::batchGetMetadata(const BatchGetMetadataOptions& options,
-                           pp::VarDictionary* result) {
+                                pp::VarDictionary* result) {
   std::vector<EntryMetadata> entries;
 
-  for (std::vector<std::string>::const_iterator it = options.entries.begin(); it != options.entries.end(); ++it) {
+  for (std::vector<std::string>::const_iterator it = options.entries.begin();
+       it != options.entries.end(); ++it) {
     std::string fullPath =
         getFullPathFromRelativePath(options.fileSystemId, *it);
     EntryMetadata entry;
@@ -282,7 +283,8 @@ void SambaFsp::batchGetMetadata(const BatchGetMetadataOptions& options,
     entries.push_back(entry);
   }
 
-  this->setResultFromEntryMetadataVector(entries.begin(), entries.end(), result);
+  this->setResultFromEntryMetadataVector(entries.begin(), entries.end(),
+                                         result);
 }
 
 void SambaFsp::LogErrorAndSetErrorResult(std::string operationName,

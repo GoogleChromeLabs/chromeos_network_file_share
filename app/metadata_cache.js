@@ -46,7 +46,8 @@ MetadataCache.prototype.cacheDirectoryContents = function(
     this.cache[fileSystemId][directoryPath]['entries'][entry.name] = entry;
     if (entry.size == -1) {
       log.debug('Adding incomplete entry for ' + entry.name);
-      this.cache[fileSystemId][directoryPath]['incomplete_entries'][entry.name] = true;
+      this.cache[fileSystemId][directoryPath]['incomplete_entries']
+                [entry.name] = true;
     }
   }.bind(this));
 };
@@ -72,7 +73,8 @@ MetadataCache.prototype.lookupMetadata = function(fileSystemId, entryPath) {
   return dirCache['entries'][pathParts['name']] || null;
 };
 
-MetadataCache.prototype.getBatchToUpdate = function(fileSystemId, entryPath, batchSize) {
+MetadataCache.prototype.getBatchToUpdate = function(
+    fileSystemId, entryPath, batchSize) {
   var pathParts = this.splitEntryPath_(entryPath);
   var dirCache = this.getDirectoryCache_(fileSystemId, pathParts);
 
@@ -109,7 +111,8 @@ MetadataCache.prototype.getBatchToUpdate = function(fileSystemId, entryPath, bat
   return batch;
 };
 
-MetadataCache.prototype.updateMetadata = function(fileSystemId, requestEntryPath, entry) {
+MetadataCache.prototype.updateMetadata = function(
+    fileSystemId, requestEntryPath, entry) {
   var pathParts = this.splitEntryPath_(requestEntryPath);
   var dirCache = this.getDirectoryCache_(fileSystemId, pathParts);
 

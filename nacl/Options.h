@@ -103,7 +103,7 @@ class FieldMaskMixin {
   // a call to stat() is required.
   bool needsStat() const {
     return ((this->fieldMask & FIELD_SIZE) != 0) &&
-        ((this->fieldMask & FIELD_MODIFICATION_TIME) != 0);
+           ((this->fieldMask & FIELD_MODIFICATION_TIME) != 0);
   }
 
   enum MetadataFields {
@@ -125,7 +125,7 @@ class GetMetadataOptions : public TrackedOperationOptions,
 };
 
 class BatchGetMetadataOptions : public TrackedOperationOptions,
-                           public FieldMaskMixin {
+                                public FieldMaskMixin {
  public:
   BatchGetMetadataOptions() {}
   virtual void Set(const pp::VarDictionary& optionsDict);
