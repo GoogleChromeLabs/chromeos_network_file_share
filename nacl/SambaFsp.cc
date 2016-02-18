@@ -262,7 +262,7 @@ bool SambaFsp::getMetadataEntry(const std::string& fullPath,
     }
   }
 
-  this->logger.Info("getMeta: " + this->stringify(*entry));
+  this->logger.Debug("getMeta: " + this->stringify(*entry));
   return true;
 }
 
@@ -920,7 +920,6 @@ std::string SambaFsp::getNameFromPath(std::string fullPath) {
     name = fullPath.substr(slashAt + 1, std::string::npos);
   }
 
-  this->logger.Info("getNameFromPath: Mapped " + fullPath + " -> " + name);
   return name;
 }
 
@@ -933,8 +932,6 @@ std::string SambaFsp::getFullPathFromRelativePath(
   // TODO(zentaro): Handle missing id.
   // TODO(zentaro): Handle trailing / on shareRoot
   std::string fullPath = mounts[fileSystemId].shareRoot + relativePath;
-  this->logger.Info("getFullPathFromRelativePath: Mapped " + relativePath +
-                    " -> " + fullPath);
 
   return fullPath;
 }

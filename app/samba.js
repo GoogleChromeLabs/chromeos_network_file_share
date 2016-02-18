@@ -403,7 +403,7 @@ SambaClient.prototype.getMetadataHandler = function(
   // TODO(zentaro): Potentially could remove the raw fields so
   // they don't have to get marshalled.
   options['fieldMask'] = this.createFieldMask_(options);
-  log.debug('GetMetadata ' + options.entryPath + ' Fields=' + options['fieldMask']);
+  //log.debug('GetMetadata ' + options.entryPath + ' Fields=' + options['fieldMask']);
 
   if (this.isEmptyRequest_(options)) {
     // For now just log since it isn't clear why this happens.
@@ -562,8 +562,6 @@ SambaClient.prototype.readDirectoryHandler = function(
       return elem;
     });
 
-    console.log(response.result.value);
-
     // Accumulate the entries so they can be set in the cache at the end.
     entries = extendArray(entries, response.result.value);
     log.debug('Sending batch of readDirectory data');
@@ -573,7 +571,7 @@ SambaClient.prototype.readDirectoryHandler = function(
   // TODO(zentaro): Potentially could remove the raw fields so
   // they don't have to get marshalled.
   options['fieldMask'] = this.createFieldMask_(options);
-  log.debug('ReadDirectory Fields=' + options['fieldMask']);
+  //log.debug('ReadDirectory Fields=' + options['fieldMask']);
 
   this.sendMessage_('readDirectory', [options], processDataFn)
       .then(
