@@ -413,6 +413,17 @@ SambaClient.prototype.getMetadataHandler = function(
     log.warning('Files app sent empty request');
   }
 
+  // Just return default information for the root, it never
+  // gets displayed anywhere anyway.
+  if (options.entryPath == '/') {
+    var ignoredDate = new Date(0);
+    var entry = { 'name': '', 'size': 0, 'isDirectory': true, 'modificationTime': ignoredDate };
+    var result = this.filterRequestedData_(options, entry);
+    log.debug('Send default root metadata');
+    successFn(result);
+    return;
+  }
+
   var updateCache = false;
   var cachedEntry = this.metadataCache.lookupMetadata(
       options.fileSystemId, options.entryPath);
