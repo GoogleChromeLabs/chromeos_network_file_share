@@ -407,10 +407,10 @@ SambaClient.prototype.getMetadataHandler = function(
   // options['fieldMask']);
 
   if (this.isEmptyRequest_(options)) {
-    // For now just log since it isn't clear why this happens.
-    // But in theory could short circuit here too.
     // See crbug.com/587231
-    log.warning('Files app sent empty request');
+    log.debug('Files app sent empty request');
+    successFn({});
+    return;
   }
 
   // Just return default information for the root, it never
