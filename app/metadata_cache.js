@@ -168,8 +168,11 @@ MetadataCache.prototype.invalidateEntry = function(fileSystemId, entryPath) {
 // Currently just the same value. In theory later policy could mark certain
 // directories for longer cache time.
 MetadataCache.prototype.getCacheTimeMs_ = function(directoryPath) {
-  // 30 second lifetime.
-  return 30 * 1000;
+  // Allow a 5 min cache. This should be safe because any subsequent
+  // readDirectory will refresh. This prevents the case where for a large
+  // directory, part of set of stat()s hit the cache but then it degrades
+  // from batching due to a total cache miss.
+  return 5 * 60 * 1000;
 };
 
 MetadataCache.prototype.getDirectoryCache_ = function(fileSystemId, pathParts) {
