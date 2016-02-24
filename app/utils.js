@@ -233,9 +233,10 @@ function attachResolver(promise, resolver) {
  * Appends tail to arr and returns arr.
  */
 function extendArray(arr, tail) {
+  var originalLength = arr.length;
   arr.length += tail.length;
 
-  for (var i = arr.length, tailLen = tail.length, j = 0; j < tailLen;
+  for (var i = originalLength, tailLen = tail.length, j = 0; j < tailLen;
        ++i, ++j) {
     arr[i] = tail[j];
   }
