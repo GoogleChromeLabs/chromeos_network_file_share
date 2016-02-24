@@ -270,15 +270,15 @@ SambaClient.prototype.mount_ = function(shareInfo, isNewMount) {
                         this.credentials.add(
                             shareInfo.sharePath, shareInfo.domain,
                             shareInfo.user, shareInfo.password);
-                        log.info('saving credentials');
+                        log.debug('saving credentials');
                         this.credentials.save().then(
                             function() {
-                              log.info('Saving credentials succeeded');
+                              log.debug('Saving credentials succeeded');
                               resolver.resolve();
                             }.bind(this),
                             function(err) { resolver.reject(err); });
                       } else {
-                        log.info('Not saving credentials for this mount');
+                        log.debug('Not saving credentials for this mount');
                         resolver.resolve();
                       }
                     }
@@ -324,7 +324,7 @@ SambaClient.prototype.unmount = function(options, successFn, errorFn) {
   this.sendMessage_('unmount', [options])
       .then(
           function(result) {
-            log.info('Unmount in samba succeeded. Calling fsp to unmount.');
+            log.debug('Unmount in samba succeeded. Calling fsp to unmount.');
             // Create a new options without the requestId.
             var unmountOptions = {fileSystemId: options.fileSystemId};
             log.debug('Unmount id ' + unmountOptions.fileSystemId);
@@ -433,7 +433,7 @@ SambaClient.prototype.getMetadataHandler = function(
     if (cacheHasStat || !this.requestNeedsStat_(options)) {
       // Either the cache already has stat() info or the request
       // doesn't need it.
-      log.debug('Found cached entry for ' + options.entryPath);
+      log.info('getMetadata[cache hit] ' + options.entryPath);
       var result = this.filterRequestedData_(options, cachedEntry);
       successFn(result);
 
@@ -445,7 +445,7 @@ SambaClient.prototype.getMetadataHandler = function(
         // the promise to resolve.
         stat_resolver.promise.then(
             function(entry) {
-              log.debug('Resolved from a previous batch ' + entry['entryPath']);
+              log.info('getMetadata[stat_resolver] ' + entry['entryPath']);
               var result = this.filterRequestedData_(options, entry);
               successFn(result);
               // TODO(zentaro): Is the delete redundant?
@@ -476,15 +476,15 @@ SambaClient.prototype.getMetadataHandler = function(
         this.sendMessage_('batchGetMetadata', [batchOptions])
             .then(
                 function(response) {
-                  log.info('batchGetMetadata succeeded');
+                  log.debug('batchGetMetadata succeeded');
                   var sentRequestedResult = false;
                   response.result.value.forEach(function(entry) {
                     var result = this.handleStatEntry_(
                         options, options.entryPath, entry);
                     // The first item in the batch is the cache miss that
-                    // triggered
-                    // the batch so fire that off.
+                    // triggered the batch so fire that off.
                     if (!sentRequestedResult) {
+                      log.info('getMetadata[cache miss] ' + options.entryPath);
                       successFn(result);
                       sentRequestedResult = true;
                     }
@@ -578,8 +578,8 @@ SambaClient.prototype.readDirectoryHandler = function(
     });
 
     // Accumulate the entries so they can be set in the cache at the end.
+    log.info('readDirectory:batch[' + entries.length + '-' + (entries.length + response.result.value.length) + '] ' + options.directoryPath);
     entries = extendArray(entries, response.result.value);
-    log.debug('Sending batch of readDirectory data');
     successFn(response.result.value, response.hasMore);
   }.bind(this);
 
@@ -591,7 +591,7 @@ SambaClient.prototype.readDirectoryHandler = function(
   this.sendMessage_('readDirectory', [options], processDataFn)
       .then(
           function() {
-            log.debug('readDirectory succeeded.');
+            log.info('readDirectory[' + entries.length + ' results] ' + options.directoryPath);
             this.metadataCache.cacheDirectoryContents(
                 options.fileSystemId, options.directoryPath, entries);
           }.bind(this),

@@ -52,7 +52,7 @@ function handleMessage(message) {
 }
 
 function listenForFileSystemEvents() {
-  log.info('************* Setting up event listeners ********');
+  log.debug('************* Setting up event listeners ********');
 
   // Setup the event listeners that the Files App will use to get data from
   // the extension.
@@ -99,7 +99,7 @@ function listenForFileSystemEvents() {
   // onMountRequested is only supported in Chrome 44 forward.
   // TODO(zentaro): Implement.
   if (chrome.fileSystemProvider.onMountRequested) {
-    log.info('onMountRequested is supported in this version of chrome.');
+    log.debug('onMountRequested is supported in this version of chrome.');
     chrome.fileSystemProvider.onMountRequested.addListener(
         mountRequestedHandler);
   }
