@@ -569,6 +569,7 @@ SambaClient.prototype.readDirectoryHandler = function(
   log.debug('readDirectoryHandler called');
 
   var entries = [];
+  var startTime = window.performance.now();
   var processDataFn = function(response) {
     // Convert the date types to be dates from string
     response.result.value = response.result.value.map(function(elem) {
@@ -578,9 +579,27 @@ SambaClient.prototype.readDirectoryHandler = function(
     });
 
     // Accumulate the entries so they can be set in the cache at the end.
-    log.info('readDirectory:batch[' + entries.length + '-' + (entries.length + response.result.value.length) + '] ' + options.directoryPath);
+    var elapsed = window.performance.now() - startTime;
+    log.info('readDirectory:batch[' + entries.length + '-' + (entries.length + response.result.value.length) + '][' + elapsed + 'ms] ' + options.directoryPath);
     entries = extendArray(entries, response.result.value);
-    successFn(response.result.value, response.hasMore);
+
+    var desiredBatchSize = 64;
+    var currentBatchSize = response.result.value.length;
+    var upto = 0;
+    if (currentBatchSize <= desiredBatchSize) {
+      // Just send it without doing anything for small batches.
+      successFn(currentBatchSize, response.hasMore);
+    } else {
+      while (upto < currentBatchSize) {
+        var newBatch = sliceArray(response.result.value, upto, desiredBatchSize);
+        successFn(newBatch, true);
+        upto += desiredBatchSize;
+      }
+
+      if (!response.hasMore) {
+        successFn([], false);
+      }
+    }
   }.bind(this);
 
   // TODO(zentaro): Potentially could remove the raw fields so

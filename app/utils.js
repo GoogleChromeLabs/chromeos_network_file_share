@@ -243,3 +243,18 @@ function extendArray(arr, tail) {
 
   return arr;
 }
+
+function sliceArray(arr, begin, length) {
+  var usableLength = clamp(length, 0, arr.length - begin);
+  var result = new Array(usableLength);
+
+  for (var i = 0, j = begin; i < usableLength; ++i, ++j) {
+    result[i] = arr[j];
+  }
+
+  return result;
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(value, max));
+}
