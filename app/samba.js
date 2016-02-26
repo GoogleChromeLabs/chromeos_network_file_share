@@ -467,7 +467,7 @@ SambaClient.prototype.getMetadataHandler = function(
       // Since there is going to be a round trip anyway
       // ask the cache for a batch of entries that could be updated.
       var batch = this.metadataCache.getBatchToUpdate(
-          options.fileSystemId, options.entryPath, 8);
+          options.fileSystemId, options.entryPath, 64);
       if (batch.length > 0) {
         var batchOptions = cloneObject(options);
         batchOptions['entries'] = batch;
