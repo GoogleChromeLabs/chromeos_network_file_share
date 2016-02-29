@@ -584,18 +584,21 @@ SambaClient.prototype.readDirectoryHandler = function(
     entries = extendArray(entries, response.result.value);
 
     var desiredBatchSize = 64;
-    var currentBatchSize = response.result.value.length;
+    var batch = response.result.value;
+    var currentBatchSize = batch.length;
     var upto = 0;
     if (currentBatchSize <= desiredBatchSize) {
       // Just send it without doing anything for small batches.
-      successFn(currentBatchSize, response.hasMore);
+      successFn(batch, response.hasMore);
     } else {
       while (upto < currentBatchSize) {
-        var newBatch = sliceArray(response.result.value, upto, desiredBatchSize);
+        // Take a copy of a slice of the array.
+        var newBatch = sliceArray(batch, upto, desiredBatchSize);
         successFn(newBatch, true);
         upto += desiredBatchSize;
       }
 
+      // For simplicity just send an empty batch with hasMore=false.
       if (!response.hasMore) {
         successFn([], false);
       }
