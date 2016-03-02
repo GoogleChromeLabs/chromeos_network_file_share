@@ -21,27 +21,11 @@
  * TODO(zentaro): Support getting data from enterprise policy
  * eg .chrome.storage.managed
  */
-LMHosts = function() {
-  this.hosts = {};
-};
+LMHosts.prototype = new IPCache();
+LMHosts.prototype.constructor = LMHosts;
+function LMHosts(){}
 
 LMHosts.LOCAL_STORAGE_KEY_NAME = 'lmhosts';
-
-
-/**
- * Resolves the hostname to an ip address or returns null if unknown.
- */
-LMHosts.prototype.resolve = function(hostName) {
-  return this.hosts[hostName.toUpperCase()] || null;
-};
-
-
-/**
- * Adds a hostname and ip address pair to the list of hosts.
- */
-LMHosts.prototype.add = function(hostName, ipAddress) {
-  this.hosts[hostName.toUpperCase()] = ipAddress;
-};
 
 
 /**
