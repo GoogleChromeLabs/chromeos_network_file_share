@@ -16,7 +16,7 @@
 
 /**
  * Send NetBIOS name request on all network interfaces and returns
- * an array of hosts and their IP addresses that contain file shares.
+ * an dictionary of hosts and their IP addresses that contain file shares.
  */
 function getAllShareRoots() {
   var resolver = getPromiseResolver();
@@ -29,15 +29,31 @@ function getAllShareRoots() {
           getFileSharesOnInterface(iface.broadcastAddress));
     });
 
-    attachResolver(joinAllIgnoringRejects(promiseList), resolver);
+    joinAllIgnoringRejects(promiseList).then(function(hostsOnAllInterfaces) {
+      var hosts = {};
+      hostsOnAllInterfaces.forEach(function(hostsOnInterface) {
+        hosts = mergeInterfaceHosts(hosts, hostsOnInterface);
+      });
+
+      resolver.resolve(hosts);
+    });
   });
 
   return resolver.promise;
 }
 
+function mergeInterfaceHosts(result, newHosts) {
+  // TODO(zentaro): In future merge IP addresses to a list.
+  for (var host in newHosts) {
+    result[host] = newHosts[host];
+  }
+
+  return result;
+}
+
 /**
  * Resolves a NetBIOS host name by sending a name request
- * UDP broadcast on every network interface. 
+ * UDP broadcast on every network interface.
  */
 function resolveFileShareHostName(hostName) {
   // TODO(zentaro): Refactor to use the IPCache.
