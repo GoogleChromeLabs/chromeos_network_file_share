@@ -14,8 +14,33 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+/**
+ * Send NetBIOS name request on all network interfaces and returns
+ * an array of hosts and their IP addresses that contain file shares.
+ */
+function getAllShareRoots() {
+  var resolver = getPromiseResolver();
 
+  // TODO(zentaro): This should probably merge the lists.
+  getNetworkInterfaces().then(function(interfaces) {
+    var promiseList = [];
+    interfaces.forEach(function(iface) {
+      promiseList.push(
+          getFileSharesOnInterface(iface.broadcastAddress));
+    });
+
+    attachResolver(joinAllIgnoringRejects(promiseList), resolver);
+  });
+
+  return resolver.promise;
+}
+
+/**
+ * Resolves a NetBIOS host name by sending a name request
+ * UDP broadcast on every network interface. 
+ */
 function resolveFileShareHostName(hostName) {
+  // TODO(zentaro): Refactor to use the IPCache.
   var resolver = getPromiseResolver();
 
   var ipAddress = lmHosts.resolve(hostName);
