@@ -321,9 +321,9 @@ SambaClient.prototype.enumerateFileShares = function(hostMap) {
   var resolver = getPromiseResolver();
 
   this.sendMessage_('custom_enumerateFileShares', [hostMap])
-      .then(function(response) { resolver.resolve(response); })
+      .then(function(response) { resolver.resolve(response); });
 
-          return resolver.promise;
+  return resolver.promise;
 };
 
 SambaClient.prototype.unmount = function(options, successFn, errorFn) {
