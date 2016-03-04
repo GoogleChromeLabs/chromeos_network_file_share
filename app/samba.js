@@ -173,7 +173,8 @@ SambaClient.prototype.sendMessage_ = function(fnName, args, opt_processDataFn) {
   log.debug(
       'Sending to NaCl fn=' + fnName + ' id=' + messageId + ' args=' +
       JSON.stringify(cleansedArgs));
-  if (fnName == 'mount' || fnName == 'unmount' || fnName == 'custom_enumerateFileShares') {
+  if (fnName == 'mount' || fnName == 'unmount' ||
+      fnName == 'custom_enumerateFileShares') {
     log.debug('Passing through mount/unmount messages');
     // These messages pass straight through.
     return this.router.sendMessageWithRetry(message);
@@ -319,11 +320,10 @@ SambaClient.prototype.noParamsHandler_ = function(
 SambaClient.prototype.enumerateFileShares = function(hostMap) {
   var resolver = getPromiseResolver();
 
-  this.sendMessage_('custom_enumerateFileShares', [hostMap]).then(function(response) {
-    resolver.resolve(response);
-  })
+  this.sendMessage_('custom_enumerateFileShares', [hostMap])
+      .then(function(response) { resolver.resolve(response); })
 
-  return resolver.promise;
+          return resolver.promise;
 };
 
 SambaClient.prototype.unmount = function(options, successFn, errorFn) {
@@ -426,7 +426,12 @@ SambaClient.prototype.getMetadataHandler = function(
   // gets displayed anywhere anyway.
   if (options.entryPath == '/') {
     var ignoredDate = new Date(0);
-    var entry = { 'name': '', 'size': 0, 'isDirectory': true, 'modificationTime': ignoredDate };
+    var entry = {
+      'name': '',
+      'size': 0,
+      'isDirectory': true,
+      'modificationTime': ignoredDate
+    };
     var result = this.filterRequestedData_(options, entry);
     log.debug('Send default root metadata');
     successFn(result);
@@ -589,7 +594,10 @@ SambaClient.prototype.readDirectoryHandler = function(
 
     // Accumulate the entries so they can be set in the cache at the end.
     var elapsed = window.performance.now() - startTime;
-    log.info('readDirectory:batch[' + entries.length + '-' + (entries.length + response.result.value.length) + '][' + elapsed + 'ms] ' + options.directoryPath);
+    log.info(
+        'readDirectory:batch[' + entries.length + '-' +
+        (entries.length + response.result.value.length) + '][' + elapsed +
+        'ms] ' + options.directoryPath);
     entries = extendArray(entries, response.result.value);
 
     var desiredBatchSize = 64;
@@ -622,7 +630,9 @@ SambaClient.prototype.readDirectoryHandler = function(
   this.sendMessage_('readDirectory', [options], processDataFn)
       .then(
           function() {
-            log.info('readDirectory[' + entries.length + ' results] ' + options.directoryPath);
+            log.info(
+                'readDirectory[' + entries.length + ' results] ' +
+                options.directoryPath);
             this.metadataCache.cacheDirectoryContents(
                 options.fileSystemId, options.directoryPath, entries);
           }.bind(this),

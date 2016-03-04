@@ -144,10 +144,7 @@ function enumerateFileShares() {
       hostIPMap[hostName] = hostInfoMap[hostName].ipAddress;
     }
 
-    var message = {
-      functionName: 'enumerateFileShares',
-      hostMap: hostIPMap
-    };
+    var message = {functionName: 'enumerateFileShares', hostMap: hostIPMap};
 
     log.debug('enumerateFileShares sending message to background');
     chrome.runtime.sendMessage(message, function(response) {

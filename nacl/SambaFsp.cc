@@ -115,7 +115,8 @@ void SambaFsp::handleCustomMessage(const std::string& functionName,
 
       std::vector<EntryMetadata> sharesInRoot;
       if (this->readFileShares(resolvedRootUrl, &sharesInRoot, &tempResult)) {
-        for (std::vector<EntryMetadata>::iterator it = sharesInRoot.begin(); it != sharesInRoot.end(); ++it) {
+        for (std::vector<EntryMetadata>::iterator it = sharesInRoot.begin();
+             it != sharesInRoot.end(); ++it) {
           it->fullPath = namedRootUrl + it->name;
           fileShares.push_back(*it);
         }
@@ -124,7 +125,8 @@ void SambaFsp::handleCustomMessage(const std::string& functionName,
       }
     }
 
-    this->setResultFromEntryMetadataVector(fileShares.begin(), fileShares.end(), result);
+    this->setResultFromEntryMetadataVector(fileShares.begin(), fileShares.end(),
+                                           result);
   } else {
     this->logger.Error("Unknown custom message " + functionName);
   }
@@ -710,8 +712,8 @@ bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
 }
 
 bool SambaFsp::readFileShares(const std::string& dirFullPath,
-                                    std::vector<EntryMetadata>* entries,
-                                    pp::VarDictionary* result) {
+                              std::vector<EntryMetadata>* entries,
+                              pp::VarDictionary* result) {
   return this->readDirectoryEntries(dirFullPath, true, entries, result);
 }
 

@@ -130,7 +130,8 @@ function listenForFileSystemEvents() {
     } else if (message.functionName == 'enumerateFileShares') {
       // TODO(zentaro): This code path maybe doesn't make sense with
       // multiple mounts.
-      log.debug('Calling SambaClient.enumerateFileShares from the background via message');
+      log.debug(
+          'Calling SambaClient.enumerateFileShares from the background via message');
       smbfs.enumerateFileShares(message.hostMap).then(function(response) {
         log.debug('Send enumerateFileShares response to popup');
         sendResponse(response);

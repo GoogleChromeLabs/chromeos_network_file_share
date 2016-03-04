@@ -23,7 +23,7 @@
  */
 LMHosts.prototype = new IPCache();
 LMHosts.prototype.constructor = LMHosts;
-function LMHosts(){}
+function LMHosts() {}
 
 LMHosts.LOCAL_STORAGE_KEY_NAME = 'lmhosts';
 

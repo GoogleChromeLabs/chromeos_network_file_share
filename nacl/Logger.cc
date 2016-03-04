@@ -24,7 +24,7 @@ namespace NaclFsp {
 
 Logger::Logger() {
   JavaScriptLogLevel = Logger::WARNING;
-  //JavaScriptLogLevel = Logger::DEBUG;
+  // JavaScriptLogLevel = Logger::DEBUG;
 
   // TODO(zentaro): Probably make INFO by release time.
   PrintfLogLevel = Logger::WARNING;

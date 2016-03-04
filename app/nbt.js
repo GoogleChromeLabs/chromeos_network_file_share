@@ -31,8 +31,7 @@ function getAllShareRoots() {
   getNetworkInterfaces().then(function(interfaces) {
     var promiseList = [];
     interfaces.forEach(function(iface) {
-      promiseList.push(
-          getFileSharesOnInterface(iface.broadcastAddress));
+      promiseList.push(getFileSharesOnInterface(iface.broadcastAddress));
     });
 
     joinAllIgnoringRejects(promiseList).then(function(hostsOnAllInterfaces) {
