@@ -25,10 +25,25 @@ function ipv4ToUint32(ipv4) {
     return null;
   }
 
-  // TODO(zentaro): Handle the case where the parts are outside 0-255.
+  var valid = true;
+  parts.forEach(function(part) {
+    var value = parseInt(part, 10);
+    if (value < 0 || value > 255) {
+      valid = false;
+    }
+  });
+
+  if (!valid) {
+    return null;
+  }
+
   return lshift(parseInt(parts[0], 10), 24) +
       lshift(parseInt(parts[1], 10), 16) + lshift(parseInt(parts[2], 10), 8) +
       parseInt(parts[3], 10);
+}
+
+function isValidIpv4(ipv4) {
+  return ipv4ToUint32(ipv4) != null;
 }
 
 /**
