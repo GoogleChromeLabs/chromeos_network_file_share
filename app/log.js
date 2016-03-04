@@ -35,7 +35,7 @@ var JSLOG_INFO = 1;
 var JSLOG_WARNING = 2;
 var JSLOG_ERROR = 3;
 
-var jsLogLevel = JSLOG_WARNING;
+var jsLogLevel = JSLOG_DEBUG;
 var traceEnabled = true;
 
 JsLogger.prototype.trace = function(operation, start, end) {

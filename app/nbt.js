@@ -15,6 +15,12 @@
 
 
 /**
+ * Global IP lookup cache.
+ */
+var ipCache = new IPCache();
+
+
+/**
  * Send NetBIOS name request on all network interfaces and returns
  * an dictionary of hosts and their IP addresses that contain file shares.
  */
@@ -35,6 +41,11 @@ function getAllShareRoots() {
         hosts = mergeInterfaceHosts(hosts, hostsOnInterface);
       });
 
+      // Update the cache.
+      for (var hostName in hosts) {
+        ipCache.add(hostName, hosts[hostName])
+      }
+
       resolver.resolve(hosts);
     });
   });
@@ -50,6 +61,7 @@ function mergeInterfaceHosts(result, newHosts) {
 
   return result;
 }
+
 
 /**
  * Resolves a NetBIOS host name by sending a name request

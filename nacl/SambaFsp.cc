@@ -102,7 +102,32 @@ void SambaFsp::auth_fn(const char* srv, const char* shr, char* wg, int wglen,
 void SambaFsp::handleCustomMessage(const std::string& functionName,
                                    const pp::VarArray& args,
                                    pp::VarDictionary* result) {
-  // TODO(zentaro): Implement.
+  if (functionName == "custom_enumerateFileShares") {
+    pp::VarDictionary hostMap(args.Get(0));
+    pp::VarArray hostNames = hostMap.GetKeys();
+    std::vector<EntryMetadata> fileShares;
+    for (size_t i = 0; i < hostNames.GetLength(); i++) {
+      std::string hostName = hostNames.Get(i).AsString();
+      std::string ip = hostMap.Get(hostNames.Get(i)).AsString();
+      pp::VarDictionary tempResult;
+      std::string resolvedRootUrl = "smb://" + ip;
+      std::string namedRootUrl = "\\\\" + hostName + "\\";
+
+      std::vector<EntryMetadata> sharesInRoot;
+      if (this->readFileShares(resolvedRootUrl, &sharesInRoot, &tempResult)) {
+        for (std::vector<EntryMetadata>::iterator it = sharesInRoot.begin(); it != sharesInRoot.end(); ++it) {
+          it->fullPath = namedRootUrl + it->name;
+          fileShares.push_back(*it);
+        }
+      } else {
+        this->logger.Error("Failed to find shares in root " + hostName);
+      }
+    }
+
+    this->setResultFromEntryMetadataVector(fileShares.begin(), fileShares.end(), result);
+  } else {
+    this->logger.Error("Unknown custom message " + functionName);
+  }
 }
 
 void SambaFsp::createMountConfig(const pp::VarDictionary& mountInfo,
@@ -681,6 +706,19 @@ bool SambaFsp::deleteDirectoryContentsRecursive(const std::string& dirFullPath,
 bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
                                     std::vector<EntryMetadata>* entries,
                                     pp::VarDictionary* result) {
+  return this->readDirectoryEntries(dirFullPath, false, entries, result);
+}
+
+bool SambaFsp::readFileShares(const std::string& dirFullPath,
+                                    std::vector<EntryMetadata>* entries,
+                                    pp::VarDictionary* result) {
+  return this->readDirectoryEntries(dirFullPath, true, entries, result);
+}
+
+bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
+                                    bool getShares,
+                                    std::vector<EntryMetadata>* entries,
+                                    pp::VarDictionary* result) {
   int dirId = -1;
   if ((dirId = smbc_opendir(dirFullPath.c_str())) < 0) {
     this->LogErrorAndSetErrorResult("readDirectory:smbc_opendir", result);
@@ -708,9 +746,10 @@ bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
       // TODO(zentaro): Handle other things? Like shares as folders.
       bool isFile = dirent->smbc_type == SMBC_FILE;
       bool isDirectory = dirent->smbc_type == SMBC_DIR;
+      bool isShare = dirent->smbc_type == SMBC_FILE_SHARE;
 
       std::string childFullPath = dirFullPath + "/" + dirent->name;
-      if (isFile || isDirectory) {
+      if (!getShares && (isFile || isDirectory)) {
         EntryMetadata entry;
         entry.name = dirent->name;
 
@@ -722,9 +761,14 @@ bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
           //                    this->stringify(entry));
           entries->push_back(entry);
         }
+      } else if (getShares && isShare) {
+        EntryMetadata entry;
+        entry.name = dirent->name;
+        entry.isDirectory = true;
+        entries->push_back(entry);
       } else {
         std::string dirType = this->mapDirectoryTypeToString(dirent->smbc_type);
-        this->logger.Debug("readDir: " + Util::ToString(itemCount) +
+        this->logger.Error("readDir: " + Util::ToString(itemCount) +
                            ") Ignored " + dirType + ": " + childFullPath);
       }
 

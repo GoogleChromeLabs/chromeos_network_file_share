@@ -123,7 +123,6 @@ void BaseNaclFsp::HandleMessage(pp::Var var_message) {
       this->copyEntry(options, &result);
     } else if (Util::stringStartsWith(functionName, "custom_")) {
       // Custom message just pass it on.
-      // TODO(zentaro): Implement
       this->handleCustomMessage(functionName, args, &result);
     } else {
       this->logger.Info("Unknown function - " + functionName);
@@ -153,6 +152,7 @@ void BaseNaclFsp::setEntryMetadata(const EntryMetadata& entry,
                                    pp::VarDictionary* value) {
   value->Set(pp::Var("isDirectory"), pp::Var(entry.isDirectory));
   value->Set(pp::Var("name"), pp::Var(entry.name));
+  value->Set(pp::Var("fullPath"), pp::Var(entry.fullPath));
   value->Set(pp::Var("size"), pp::Var(entry.size));
   value->Set(pp::Var("modificationTime"), pp::Var(entry.modificationTime));
 }

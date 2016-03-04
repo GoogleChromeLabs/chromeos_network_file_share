@@ -173,7 +173,7 @@ SambaClient.prototype.sendMessage_ = function(fnName, args, opt_processDataFn) {
   log.debug(
       'Sending to NaCl fn=' + fnName + ' id=' + messageId + ' args=' +
       JSON.stringify(cleansedArgs));
-  if (fnName == 'mount' || fnName == 'unmount') {
+  if (fnName == 'mount' || fnName == 'unmount' || fnName == 'custom_enumerateFileShares') {
     log.debug('Passing through mount/unmount messages');
     // These messages pass straight through.
     return this.router.sendMessageWithRetry(message);
@@ -316,6 +316,15 @@ SambaClient.prototype.noParamsHandler_ = function(
           });
 };
 
+SambaClient.prototype.enumerateFileShares = function(hostMap) {
+  var resolver = getPromiseResolver();
+
+  this.sendMessage_('custom_enumerateFileShares', [hostMap]).then(function(response) {
+    resolver.resolve(response);
+  })
+
+  return resolver.promise;
+};
 
 SambaClient.prototype.unmount = function(options, successFn, errorFn) {
   log.info('Unmounting');

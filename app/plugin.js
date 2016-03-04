@@ -115,7 +115,7 @@ function listenForFileSystemEvents() {
       smbfs.mount(message.mountInfo)
           .then(
               function() {
-                log.debug('Sending success response to popup');
+                log.debug('Sending mount success response to popup');
                 sendResponse({result: true});
               },
               function(err) {
@@ -127,6 +127,14 @@ function listenForFileSystemEvents() {
       // multiple mounts.
       log.debug('Calling SambaClient.unmount from the background via message');
       smbfs.unmount();
+    } else if (message.functionName == 'enumerateFileShares') {
+      // TODO(zentaro): This code path maybe doesn't make sense with
+      // multiple mounts.
+      log.debug('Calling SambaClient.enumerateFileShares from the background via message');
+      smbfs.enumerateFileShares(message.hostMap).then(function(response) {
+        log.debug('Send enumerateFileShares response to popup');
+        sendResponse(response);
+      });
     } else {
       log.error('ERROR: Unknown message passed.');
       log.error(message);
