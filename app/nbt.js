@@ -14,63 +14,86 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+/**
+ * Global IP lookup cache.
+ */
+var ipCache = new IPCache();
 
-function resolveFileShareHostName(hostName) {
+
+/**
+ * Send NetBIOS name request on all network interfaces and returns
+ * an dictionary of hosts and their IP addresses that contain file shares.
+ */
+function getAllShareRoots() {
   var resolver = getPromiseResolver();
 
-  var ipAddress = lmHosts.resolve(hostName);
-  if (ipAddress) {
-    log.info('LMHosts resolved ' + hostName + ' to ' + ipAddress);
-    resolver.resolve([ipAddress]);
-    return resolver.promise;
-  }
-
-  var promiseList = [];
+  // TODO(zentaro): This should probably merge the lists.
   getNetworkInterfaces().then(function(interfaces) {
+    var promiseList = [];
     interfaces.forEach(function(iface) {
-      promiseList.push(
-          getFileSharesOnInterface(iface.broadcastAddress, hostName));
+      promiseList.push(getFileSharesOnInterface(iface.broadcastAddress));
     });
 
-    var ipAddresses = [];
-    var promisesRemaining = promiseList.length;
-    if (promisesRemaining == 0) {
-      log.error('No network interfaces available');
-      resolver.reject('No network interfaces available');
-    } else {
-      promiseList.forEach(function(promise) {
-        promise.then(
-            function(nameInfoMap) {
-              var nameInfo = nameInfoMap[hostName.toUpperCase()];
-              if (nameInfo != undefined) {
-                log.info('found ip ' + nameInfo.ipAddress + ' for ' + hostName);
-                // Add the IP if it isn't already in the list.
-                if (ipAddresses.indexOf(nameInfo.ipAddress) == -1) {
-                  ipAddresses.push(nameInfo.ipAddress);
-                }
-              } else {
-                log.debug(hostName + ' not found on this interface');
-              }
-
-              // TODO(zentaro): Implement a thenAlways()
-              promisesRemaining--;
-              if (promisesRemaining <= 0) {
-                resolver.resolve(ipAddresses);
-              }
-            },
-            function(err) {
-              log.error(
-                  'getFileSharesOnInterface promise rejected with ' + err);
-              promisesRemaining--;
-              if (promisesRemaining <= 0) {
-                resolver.resolve(ipAddresses);
-              }
-            });
+    joinAllIgnoringRejects(promiseList).then(function(hostsOnAllInterfaces) {
+      var hosts = {};
+      hostsOnAllInterfaces.forEach(function(hostsOnInterface) {
+        hosts = mergeInterfaceHosts(hosts, hostsOnInterface);
       });
-    }
 
+      // Update the cache.
+      for (var hostName in hosts) {
+        ipCache.add(hostName, hosts[hostName].ipAddress)
+      }
+
+      resolver.resolve(hosts);
+    });
   });
 
+  return resolver.promise;
+}
+
+function mergeInterfaceHosts(result, newHosts) {
+  // TODO(zentaro): In future merge IP addresses to a list.
+  for (var host in newHosts) {
+    result[host] = newHosts[host];
+  }
+
+  return result;
+}
+
+
+/**
+ * Resolves a NetBIOS host name by sending a name request
+ * UDP broadcast on every network interface.
+ */
+function resolveFileShareHostName(hostName) {
+  var resolver = getPromiseResolver();
+  var ipAddress;
+
+  if (isValidIpv4(hostName)) {
+    // If the host name is an IP address then no need to do anything.
+    ipAddress = hostName;
+  } else {
+    if (ipAddress = lmHosts.resolve(hostName)) {
+      log.info('LMHosts resolved ' + hostName + ' to ' + ipAddress);
+    } else if (ipAddress = ipCache.resolve(hostName)) {
+      log.info('IPCache resolved ' + hostName + ' to ' + ipAddress);
+    } else {
+      getAllShareRoots().then(function() {
+        ipAddress = ipCache.resolve(hostName);
+        if (ipAddress) {
+          resolver.resolve([ipAddress]);
+        } else {
+          log.error('Host ' + hostName + ' cannot be resolved');
+          resolver.resolve([]);
+        }
+      }, resolver.reject);
+
+      return resolver.promise;
+    }
+  }
+
+  resolver.resolve([ipAddress]);
   return resolver.promise;
 }
 

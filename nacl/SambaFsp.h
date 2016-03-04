@@ -119,9 +119,15 @@ class SambaFsp : public BaseNaclFsp {
                                         pp::VarDictionary* result);
   bool deleteEmptyDirectory(const std::string& fullPath,
                             pp::VarDictionary* result);
+  bool readDirectoryEntries(const std::string& dirFullPath, bool readShares,
+                            std::vector<EntryMetadata>* entries,
+                            pp::VarDictionary* result);
   bool readDirectoryEntries(const std::string& dirFullPath,
                             std::vector<EntryMetadata>* entries,
                             pp::VarDictionary* result);
+  bool readFileShares(const std::string& dirFullPath,
+                      std::vector<EntryMetadata>* entries,
+                      pp::VarDictionary* result);
   bool getMetadataEntry(const std::string& fullPath, EntryMetadata* entry,
                         pp::VarDictionary* result);
   void statAndStreamEntryMetadata(int messageId,

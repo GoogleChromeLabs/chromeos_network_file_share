@@ -137,6 +137,27 @@ function onPasswordChecked(changeEvent) {
   }
 }
 
+function enumerateFileShares() {
+  getAllShareRoots().then(function(hostInfoMap) {
+    var hostIPMap = {};
+    for (var hostName in hostInfoMap) {
+      hostIPMap[hostName] = hostInfoMap[hostName].ipAddress;
+    }
+
+    var message = {functionName: 'enumerateFileShares', hostMap: hostIPMap};
+
+    log.debug('enumerateFileShares sending message to background');
+    chrome.runtime.sendMessage(message, function(response) {
+      if (response.result) {
+        log.info('enumerateFileShares succeeded');
+        // TODO(zentaro): Do something with this!
+      } else {
+        log.error('enumerateFileShares failed with ' + response.error);
+      }
+    });
+  });
+}
+
 function onDefaultPopupLoaded() {
   // Do something
   log.info('Popup loaded');
@@ -148,9 +169,11 @@ function onDefaultPopupLoaded() {
   cancelButton.addEventListener('click', onCancel);
   passwordCheck.addEventListener('change', onPasswordChecked);
 
-
+  enumerateFileShares();
   log.debug('Loading lmHosts');
   lmHosts.load().then(function() { log.debug('lmHosts loaded.'); });
 }
+
+
 
 document.addEventListener('DOMContentLoaded', onDefaultPopupLoaded);
