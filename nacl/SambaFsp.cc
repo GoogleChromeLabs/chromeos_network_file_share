@@ -759,8 +759,6 @@ bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
         if (entry.name != "." && entry.name != "..") {
           entry.fullPath = childFullPath;
           entry.isDirectory = isDirectory;
-          // this->logger.Debug("readDir: " + Util::ToString(itemCount) + ") " +
-          //                    this->stringify(entry));
           entries->push_back(entry);
         }
       } else if (getShares && isShare) {
@@ -770,7 +768,7 @@ bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
         entries->push_back(entry);
       } else {
         std::string dirType = this->mapDirectoryTypeToString(dirent->smbc_type);
-        this->logger.Error("readDir: " + Util::ToString(itemCount) +
+        this->logger.Debug("readDir: " + Util::ToString(itemCount) +
                            ") Ignored " + dirType + ": " + childFullPath);
       }
 
