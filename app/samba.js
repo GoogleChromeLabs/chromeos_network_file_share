@@ -476,6 +476,7 @@ SambaClient.prototype.getMetadataHandler = function(
 
       // When the result comes back update the cache with the
       // stat() info.
+      // TODO(zentaro): This looks redundant.
       updateCache = true;
 
       // Since there is going to be a round trip anyway

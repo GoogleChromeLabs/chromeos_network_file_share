@@ -27,6 +27,8 @@ var MessageRouter = function() {
 MessageRouter.prototype.initialize = function(sendMessageFn) {
   log.debug('Setting sendMessageFn in message router');
   this.sendMessageFn = sendMessageFn;
+  // TODO(zentaro): Remove this or use it to bypass the redundant promise
+  // resolution.
   this.isInitialized = true;
 
   // Resolve once initialize has been called so that send message can wait
