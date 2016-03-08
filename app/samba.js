@@ -510,20 +510,25 @@ SambaClient.prototype.getMetadataHandler = function(
               delete cachedEntry['stat_resolver'];
             });
 
+        // Helper function to handle streamed data.
+        var processDataFn = function(response) {
+          log.debug('batchGetMetadata batch ');
+          response.result.value.forEach(function(entry) {
+            this.handleStatEntry_(
+                options, options.entryPath, entry);
+          }.bind(this));
+        }.bind(this);
+
         // Send the batch to NaCl. When the batch comes back
         // handleStatEntry_ will get called on each item in the
         // batch. That will update the cache and resolve any
         // pending promises including the one that trigger this
         // batch.
-        this.sendMessage_('batchGetMetadata', [batchOptions])
+        this.sendMessage_('batchGetMetadata', [batchOptions], processDataFn)
             .then(
                 function(response) {
-                  log.debug('batchGetMetadata succeeded');
-                  response.result.value.forEach(function(entry) {
-                    this.handleStatEntry_(
-                        options, options.entryPath, entry);
-                  }.bind(this));
-                }.bind(this),
+                  log.debug('batchGetMetadata completed');
+                },
                 function(err) {
                   log.error('batchGetMetadata failed with ' + err);
                   errorFn(err);

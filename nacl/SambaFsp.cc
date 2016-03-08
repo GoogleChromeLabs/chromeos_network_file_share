@@ -293,25 +293,25 @@ bool SambaFsp::getMetadataEntry(const std::string& fullPath,
   return true;
 }
 
-void SambaFsp::batchGetMetadata(const BatchGetMetadataOptions& options,
+bool SambaFsp::batchGetMetadata(const BatchGetMetadataOptions& options, int messageId,
                                 pp::VarDictionary* result) {
   std::vector<EntryMetadata> entries;
 
+  // Create stub entries with just the name and fullPath. They
+  // will be fully populated by statAndStreamEntryMetadata.
   for (std::vector<std::string>::const_iterator it = options.entries.begin();
        it != options.entries.end(); ++it) {
     std::string fullPath =
         getFullPathFromRelativePath(options.fileSystemId, *it);
     EntryMetadata entry;
-    if (!this->getMetadataEntry(fullPath, &entry, result)) {
-      // Error was already set.
-      return;
-    }
+    entry.name = this->getNameFromPath(fullPath);
+    entry.fullPath = fullPath;
 
     entries.push_back(entry);
   }
 
-  this->setResultFromEntryMetadataVector(entries.begin(), entries.end(),
-                                         result);
+  this->statAndStreamEntryMetadata("batchGetMetadata", messageId, &entries);
+  return true;
 }
 
 void SambaFsp::LogErrorAndSetErrorResult(std::string operationName,
@@ -389,7 +389,7 @@ bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
   if (options.needsStat()) {
     // If size or modification time was requested entries are stat()'d
     // and streamed in batches.
-    this->statAndStreamEntryMetadata(messageId, &entries);
+    this->statAndStreamEntryMetadata("readDirectory", messageId, &entries);
     this->logger.Debug("readDirectory: with stat COMPLETE " + fullPath);
     return true;
   } else {
@@ -794,7 +794,7 @@ bool SambaFsp::readDirectoryEntries(const std::string& dirFullPath,
   return success;
 }
 
-void SambaFsp::statAndStreamEntryMetadata(int messageId,
+void SambaFsp::statAndStreamEntryMetadata(const std::string& functionName, int messageId,
                                           std::vector<EntryMetadata>* entries) {
   // TODO(zentaro): Could be smarter and time how long each batch takes and
   // adjust based on that. For now just a simple system.
@@ -820,7 +820,7 @@ void SambaFsp::statAndStreamEntryMetadata(int messageId,
     this->populateStatInfoVector(rangeStart, rangeEnd);
     this->setResultFromEntryMetadataVector(rangeStart, rangeEnd, &result);
     hasMore = (rangeEnd != entries->end());
-    this->sendMessage("readDirectory", messageId, result, hasMore);
+    this->sendMessage(functionName, messageId, result, hasMore);
     startIndex += currentBatchSize;
   }
 }
@@ -847,6 +847,7 @@ void SambaFsp::populateEntryMetadataWithStatInfo(EntryMetadata& entry) {
   } else {
     entry.size = statInfo.st_size;
     entry.modificationTime = statInfo.st_mtime;
+    entry.isDirectory = S_ISDIR(statInfo.st_mode);
   }
 }
 

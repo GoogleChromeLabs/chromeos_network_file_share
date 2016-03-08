@@ -63,7 +63,7 @@ class INaclFsp {
                        pp::VarDictionary* result) = 0;
   virtual void getMetadata(const GetMetadataOptions& options,
                            pp::VarDictionary* result) = 0;
-  virtual void batchGetMetadata(const BatchGetMetadataOptions& options,
+  virtual bool batchGetMetadata(const BatchGetMetadataOptions& options, int messageId,
                                 pp::VarDictionary* result) = 0;
   virtual bool readDirectory(const ReadDirectoryOptions& options, int messageId,
                              pp::VarDictionary* result) = 0;

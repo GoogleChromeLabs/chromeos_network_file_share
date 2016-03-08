@@ -72,7 +72,7 @@ class SambaFsp : public BaseNaclFsp {
                        pp::VarDictionary* result);
   virtual void getMetadata(const GetMetadataOptions& options,
                            pp::VarDictionary* result);
-  virtual void batchGetMetadata(const BatchGetMetadataOptions& options,
+  virtual bool batchGetMetadata(const BatchGetMetadataOptions& options, int messageId,
                                 pp::VarDictionary* result);
   virtual bool readDirectory(const ReadDirectoryOptions& options, int messageId,
                              pp::VarDictionary* result);
@@ -130,7 +130,7 @@ class SambaFsp : public BaseNaclFsp {
                       pp::VarDictionary* result);
   bool getMetadataEntry(const std::string& fullPath, EntryMetadata* entry,
                         pp::VarDictionary* result);
-  void statAndStreamEntryMetadata(int messageId,
+  void statAndStreamEntryMetadata(const std::string& functionName, int messageId,
                                   std::vector<EntryMetadata>* entries);
   void populateStatInfoVector(
       const std::vector<EntryMetadata>::iterator& rangeStart,
