@@ -488,21 +488,40 @@ SambaClient.prototype.getMetadataHandler = function(
         batchOptions['entries'] = batch;
         delete batchOptions['entryPath'];
 
+        // getBatchToUpdate added a resolver to all the items in
+        // the batch. Need to bind the cache miss entry to the
+        // promise so that it resolves with the rest of the batch.
+        stat_resolver = cachedEntry['stat_resolver'];
+        // assert(stat_resolver)
+
+        // TODO(zentaro): Can some of this be merged with the code path
+        // above.
+        stat_resolver.promise.then(
+            function(entry) {
+              log.info('getMetadata[cache miss] ' + options.entryPath);
+              var result = this.filterRequestedData_(options, entry);
+              successFn(result);
+              // TODO(zentaro): Is the delete redundant?
+              delete cachedEntry['stat_resolver'];
+            }.bind(this),
+            function(err) {
+              log.error('batchGetMetadata[stat_resolver+miss] failed with ' + err);
+              errorFn(err);
+              delete cachedEntry['stat_resolver'];
+            });
+
+        // Send the batch to NaCl. When the batch comes back
+        // handleStatEntry_ will get called on each item in the
+        // batch. That will update the cache and resolve any
+        // pending promises including the one that trigger this
+        // batch.
         this.sendMessage_('batchGetMetadata', [batchOptions])
             .then(
                 function(response) {
                   log.debug('batchGetMetadata succeeded');
-                  var sentRequestedResult = false;
                   response.result.value.forEach(function(entry) {
-                    var result = this.handleStatEntry_(
+                    this.handleStatEntry_(
                         options, options.entryPath, entry);
-                    // The first item in the batch is the cache miss that
-                    // triggered the batch so fire that off.
-                    if (!sentRequestedResult) {
-                      log.info('getMetadata[cache miss] ' + options.entryPath);
-                      successFn(result);
-                      sentRequestedResult = true;
-                    }
                   }.bind(this));
                 }.bind(this),
                 function(err) {

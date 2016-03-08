@@ -73,6 +73,11 @@ MetadataCache.prototype.lookupMetadata = function(fileSystemId, entryPath) {
   return dirCache['entries'][pathParts['name']] || null;
 };
 
+/**
+ * Gets a batch of incomplete entries. entryPath is cache miss
+ * that triggered the batch and so needs to be included in the
+ * batch.
+ */
 MetadataCache.prototype.getBatchToUpdate = function(
     fileSystemId, entryPath, batchSize) {
   var pathParts = this.splitEntryPath_(entryPath);
@@ -82,17 +87,24 @@ MetadataCache.prototype.getBatchToUpdate = function(
     return [];
   }
 
+  // Put the first item in the batch since this one is the cache miss
+  // that triggered the batch. A promise resolver is added to the entry
+  // and it is removed from the the incomplete set.
   var upto = 1;
   var batch = [entryPath];
-  var toRemove = [];
+  dirCache['entries'][pathParts['name']]['stat_resolver'] = getPromiseResolver();
+  delete dirCache['incomplete_entries'][pathParts['name']];
 
-  // TODO(zentaro): Might also have to put a promise on the entry
-  // while a batch is in flight to prevent a race condition.
+  // The entry that caused the cache miss was removed from this
+  // list above. Now fill the rest of the batch with more
+  // incomplete entries.
+  var toRemove = [];
   for (var name in dirCache['incomplete_entries']) {
-    if (name != pathParts['name']) {
-      var fullPath = this.joinEntryPath_(pathParts['path'], name);
-      batch.push(fullPath);
-    }
+    // Since entries in the directory cache just contain the name
+    // the fullPath gets recreated from the path of the original
+    // cache miss entry (since it is in the same directory).
+    var fullPath = this.joinEntryPath_(pathParts['path'], name);
+    batch.push(fullPath);
 
     // Put a resolver in the cache entry that subsequent
     // calls can wait on.
@@ -104,6 +116,9 @@ MetadataCache.prototype.getBatchToUpdate = function(
     }
   }
 
+  // Remove all the items that were add to the batch.
+  // Since they all got promise resolvers attached to them
+  // subsequent misses will just wait on the promise.
   toRemove.forEach(function(name) {
     delete dirCache['incomplete_entries'][name];
   });
@@ -134,10 +149,9 @@ MetadataCache.prototype.updateMetadata = function(
       }
     }
 
-    // Assumption is that updateMetadata is only called with complete entries.
+    // Remove from the incomplete_entries set (Assumption is that
+    // updateMetadata is only called with complete entries).
     dirCache['entries'][entry['name']] = entry;
-
-    // Remove from the incomplete_entries set.
     log.debug('Removing incomplete ' + entry['entryPath']);
     delete dirCache['incomplete_entries'][entry['name']];
   }
