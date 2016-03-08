@@ -461,6 +461,7 @@ SambaClient.prototype.getMetadataHandler = function(
             function(entry) {
               log.info('getMetadata[stat_resolver] ' + entry['entryPath']);
               var result = this.filterRequestedData_(options, entry);
+
               successFn(result);
               // TODO(zentaro): Is the delete redundant?
               delete cachedEntry['stat_resolver'];
@@ -511,8 +512,10 @@ SambaClient.prototype.getMetadataHandler = function(
             });
 
         // Helper function to handle streamed data.
+        var upto = 0;
         var processDataFn = function(response) {
-          log.debug('batchGetMetadata batch ');
+          log.info('batchGetMetadata batch ' + upto + '-' + (upto + response.result.value.length) + ' of ' + batch.length);
+          upto += response.result.value.length;
           response.result.value.forEach(function(entry) {
             this.handleStatEntry_(
                 options, options.entryPath, entry);
@@ -625,6 +628,8 @@ SambaClient.prototype.readDirectoryHandler = function(
         'ms] ' + options.directoryPath);
     entries = extendArray(entries, response.result.value);
 
+    // TODO(zentaro): Can use eg. 16 for the first batches to improve perceived
+    // speed.
     var desiredBatchSize = 64;
     var batch = response.result.value;
     var currentBatchSize = batch.length;

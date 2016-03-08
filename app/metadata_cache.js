@@ -37,7 +37,8 @@ MetadataCache.prototype.cacheDirectoryContents = function(
   this.cache[fileSystemId][directoryPath] = {
     'timeCached': window.performance.now(),
     'entries': {},
-    'incomplete_entries': {}
+    'incomplete_entries': {},
+    'miss_count': 0
   };
 
   entries.forEach(function(entry) {
@@ -92,6 +93,13 @@ MetadataCache.prototype.getBatchToUpdate = function(
   // and it is removed from the the incomplete set.
   var upto = 1;
   var batch = [entryPath];
+  // TODO(zentaro): Move thresholds to common location.
+  var collectEverything = dirCache['miss_count'] >= 64;
+  dirCache['miss_count'] += 64;
+  if (collectEverything) {
+    log.info('hit_count exceeded threshold. Collecting everything.');
+  }
+
   dirCache['entries'][pathParts['name']]['stat_resolver'] = getPromiseResolver();
   delete dirCache['incomplete_entries'][pathParts['name']];
 
@@ -111,11 +119,12 @@ MetadataCache.prototype.getBatchToUpdate = function(
     dirCache['entries'][name]['stat_resolver'] = getPromiseResolver();
     toRemove.push(name);
 
-    if (upto++ >= batchSize) {
+    if (!collectEverything && (upto++ >= batchSize)) {
       break;
     }
   }
 
+  log.info('batch collecting ' + batch.length + ' entries');
   // Remove all the items that were add to the batch.
   // Since they all got promise resolvers attached to them
   // subsequent misses will just wait on the promise.
