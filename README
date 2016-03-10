@@ -11,12 +11,11 @@ Setup
 1) Download the NaCl SDK and unzip it as directed.
       https://developer.chrome.com/native-client/sdk/download
 
-2) Update the SDK and get the canary version (at least until the required code
-gets to the stable branch).
+2) Update the SDK and get the pepper_50 version.
       cd nacl_sdk
       ./naclsdk update
-      ./naclsdk update pepper_canary
-      export NACL_SDK_ROOT=/path/to/nacl_sdk/pepper_canary
+      ./naclsdk update pepper_50
+      export NACL_SDK_ROOT=/path/to/nacl_sdk/pepper_50
 
 3) Get depot_tools and gclient.
       git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
@@ -72,9 +71,13 @@ off. If you don't do this extra step prior to building the app the ARM build
 will crash.
 
 Before building the app edit $NACL_SDK_ROOT/src/nacl_io/Makefile and add
-'CFLAGS += -O0' (without quotes) after the line 'CFLAGS += -DNACL_IO_LOGGING=0'
-then
+the following after the line 'CFLAGS += -DNACL_IO_LOGGING=0'
 
+ifeq ($(NACL_ARCH), arm)
+  CFLAGS += -O1
+endif
+
+// then rebuild nacl_io
 cd $NACL_SDK_ROOT/src/nacl_io/
 make V=1 CONFIG=Release TOOLCHAIN=glibc NACL_ARCH=arm
 
