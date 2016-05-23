@@ -52,6 +52,17 @@ paper-toolbar {
   right: 0px;
 }
 
+#licenseLink {
+  margin-top: 15px;
+  margin-bottom: 10px;
+  position: absolute;
+  bottom: 0px;
+  left: 20px;
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 #spinner {
   margin: auto;
 }

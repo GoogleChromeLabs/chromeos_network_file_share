@@ -137,6 +137,10 @@ function onPasswordChecked(changeEvent) {
   }
 }
 
+function onLicenseLinkClicked() {
+  loadLicensePage();
+}
+
 function enumerateFileShares() {
   getAllShareRoots().then(function(hostInfoMap) {
     var hostIPMap = {};
@@ -164,10 +168,12 @@ function onDefaultPopupLoaded() {
   var mountButton = document.getElementById('mountButton');
   var cancelButton = document.getElementById('cancelButton');
   var passwordCheck = document.getElementById('passwordCheck');
+  var licenseLink = document.getElementById('licenseLink');
 
   mountButton.addEventListener('click', onMountClicked);
   cancelButton.addEventListener('click', onCancel);
   passwordCheck.addEventListener('change', onPasswordChecked);
+  licenseLink.addEventListener('click', onLicenseLinkClicked);
 
   enumerateFileShares();
   log.debug('Loading lmHosts');
