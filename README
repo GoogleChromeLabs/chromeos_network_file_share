@@ -20,7 +20,7 @@ Setup
 3) Get depot_tools and gclient.
       git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
-4) Put depot_tools on the path (or put it in your .bachrc)
+4) Put depot_tools on the path (or put it in your .bashrc)
       https://www.chromium.org/developers/how-tos/install-depot-tools
 
 5) Get WebPorts (aka NaCl Ports).
