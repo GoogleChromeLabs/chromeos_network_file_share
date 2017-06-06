@@ -696,6 +696,7 @@ SambaClient.prototype.copyEntryHandler = function(options, successFn, errorFn) {
 
 SambaClient.prototype.moveEntryHandler = function(options, successFn, errorFn) {
   this.metadataCache.invalidateEntry(options.fileSystemId, options.targetPath);
+  this.metadataCache.invalidateEntry(options.fileSystemId, options.sourcePath);
   this.noParamsHandler_('moveEntry', options, successFn, errorFn);
 };
 
