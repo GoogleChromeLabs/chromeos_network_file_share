@@ -100,7 +100,7 @@ void CreateDirectoryOptions::Set(const pp::VarDictionary& optionsDict) {
 void OpenFileOptions::Set(const pp::VarDictionary& optionsDict) {
   TrackedOperationOptions::Set(optionsDict);
   filePath = optionsDict.Get("filePath").AsString();
-  std::string fileMode = optionsDict.Get("fileMode").AsString();
+  std::string fileMode = optionsDict.Get("mode").AsString();
   if (fileMode == "READ") {
     mode = FILE_MODE_READ;
   } else {

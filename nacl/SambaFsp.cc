@@ -413,10 +413,10 @@ void SambaFsp::openFile(const OpenFileOptions& options,
   std::string fullPath =
       getFullPathFromRelativePath(options.fileSystemId, relativePath);
 
-  // int openFileFlags = options.mode == FILE_MODE_READ ? O_RDONLY : O_WRONLY;
+  int openFileFlags = options.mode == FILE_MODE_READ ? O_RDONLY : O_RDWR;
   this->logger.Info("openFileMode: " + Util::ToString(options.mode));
   // TODO(zentaro): File modes.
-  int openFileId = smbc_open(fullPath.c_str(), O_RDWR, 0);
+  int openFileId = smbc_open(fullPath.c_str(), openFileFlags, 0);
 
   if (openFileId < 0) {
     this->LogErrorAndSetErrorResult("openFile:smbc_open", result);
