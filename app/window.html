@@ -58,6 +58,9 @@ Mount a share 'dialog'.
           <paper-input label="Share Path" id="sharePath" spellcheck="false" maxlength="512" autofocus></paper-input>
           <paper-tooltip for="sharePath" position="top" offset="0">The share path can either be in the Windows(tm) format eg. \\server\share or an smb URL eg. smb://server/share</paper-tooltip>
         </div>
+        <div>
+          <paper-input label="Display Name (Optional)" id="displayName" spellcheck="false" maxlength="512"></paper-input>
+        </div>
         <paper-checkbox id="passwordCheck">My file share needs a password</paper-checkbox>
         <iron-collapse id="collapsedContent">
           <div>

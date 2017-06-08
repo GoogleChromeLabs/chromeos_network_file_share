@@ -233,8 +233,8 @@ SambaClient.prototype.mount_ = function(shareInfo, isNewMount) {
   // TODO(zentaro): Maybe support a friendly display name?
   var options = {
     fileSystemId: shareInfo.sharePath,
-    displayName: shareInfo.sharePath,
-    writable: true,
+    displayName: shareInfo.displayName,
+    writable: true
   };
 
   log.debug('Calling into Nacl to mount');
