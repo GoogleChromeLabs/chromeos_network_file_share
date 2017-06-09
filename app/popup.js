@@ -32,8 +32,9 @@ function mapErrorCodeToText(errorCode) {
 function onMountClicked() {
   log.debug('Mount clicked');
 
-  var sharePath = document.getElementById('sharePath').value;
-  var displayName = document.getElementById('displayName').value;
+  var sharePath = document.getElementById('sharePath').sharePath;
+  var displayName = document.getElementById('sharePath').displayName;
+
   var domain = '';
   var user = '';
   var password = '';
@@ -68,10 +69,6 @@ function onMountClicked() {
                 ' path=' + result.path);
             log.info('Canonical=' + result.canonical);
 
-            if (!displayName) {
-              log.info("Display name not found, reverting to share path: " + result.canonical);
-              displayName = result.canonical;
-            }
             var message = {
               functionName: 'mount',
               mountInfo: {
