@@ -18,10 +18,10 @@
 function loadForegroundPage() {
   chrome.app.window.create('mount_dialog.html', {
     id: 'main_window',
-    innerBounds: {width: 640, height: 390, left: 100, top: 100},
+    innerBounds: {width: 640, height: 430, left: 100, top: 100},
     hidden: false,
     minWidth: 640,
-    minHeight: 390,
+    minHeight: 430,
     frame: {type: 'chrome', color: '#137CD0'}
   });
 }

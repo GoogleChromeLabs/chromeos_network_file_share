@@ -230,7 +230,6 @@ SambaClient.prototype.mount_ = function(shareInfo, isNewMount) {
   log.info('Mounting ShareInfo.sharePath=' + shareInfo.sharePath);
 
   var resolver = getPromiseResolver();
-  // TODO(zentaro): Maybe support a friendly display name?
   var options = {
     fileSystemId: shareInfo.sharePath,
     displayName: shareInfo.displayName,
