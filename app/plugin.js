@@ -14,6 +14,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+const chromeOs = "cros";
 
 // Init client.
 var smbfs = new SambaClient();
@@ -152,5 +153,12 @@ document.addEventListener('DOMContentLoaded', function() {
   listenerDiv.addEventListener('load', naclLoaded, true);
 });
 
-listenForFileSystemEvents();
-chrome.app.runtime.onLaunched.addListener(loadForegroundPage);
+chrome.runtime.getPlatformInfo(function(info) {
+  if (info.os === chromeOs) {
+    listenForFileSystemEvents();
+    chrome.app.runtime.onLaunched.addListener(loadForegroundPage);
+  } else {
+    log.warning("** Warning, not running on Chrome OS **");
+    chrome.app.runtime.onLaunched.addListener(loadMountErrorPage);
+  }
+});

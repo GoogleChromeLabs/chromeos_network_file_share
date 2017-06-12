@@ -36,3 +36,14 @@ function loadLicensePage() {
     frame: {type: 'chrome', color: '#137CD0'}
   });
 }
+
+function loadMountErrorPage() {
+  chrome.app.window.create('mount_error.html', {
+    id: 'mount_error',
+    innerBounds: {width: 640, height: 390, left: 100, top: 100},
+    hidden: false,
+    minWidth: 640,
+    minHeight: 390,
+    frame: {type: 'chrome', color: '#137CD0'}
+  });
+}
