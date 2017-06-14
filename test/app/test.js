@@ -4,6 +4,7 @@
 
 var assert = require('assert');
 require('../../app/metadata_cache');
+require('../../app/log');
 
 describe('MetadataCache', function() {
 
