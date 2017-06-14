@@ -5,7 +5,7 @@
 
   <template>
     <div id="container">
-      <paper-input id="input_field" spellcheck="false" maxlength="64" label="Share Path" on-input="inputChanged"></paper-input>
+      <paper-input id="input_field" spellcheck="false" maxlength="64" label="Share Path" on-input="inputChanged" autofocus></paper-input>
       <div>&nbsp;
         <paper-input id="display_field" spellcheck="false" maxlength="64" label="Display Name (Optional)" on-input="displayChanged"></paper-input>
         <paper-tooltip for="display_field" position="top" offset="0">How the share will appear in the file manager. If not specified, it will default to the share path.</paper-tooltip>
