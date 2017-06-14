@@ -24,12 +24,19 @@
         displayName: {
           type: String,
           readOnly: true
+        },
+        autofocus: {
+          type: Boolean,
+          value: false
         }
       },
 
       ready: function() {
         this.inputField = this.$.input_field;
         this.displayField = this.$.display_field;
+        if (this.autofocus) {
+          this.inputField.$.input.focus();
+        }
       },
 
       inputChanged: function() {
