@@ -5,7 +5,7 @@ support connecting to SMB file shares.
 
 The NaCl port is currently patched from Samba 4.1.22.
 
-### Setup
+## Setup
 
 1) Download the NaCl SDK and unzip it as directed.
       https://developer.chrome.com/native-client/sdk/download
@@ -77,7 +77,7 @@ cd chromeos_network_file_share
 nacl/build.sh
 ```
 
-### Tests
+## Tests
 
 We use [Mocha](http://mochajs.org) and [Chai](http://chaijs.com/) as our test framework.
 
