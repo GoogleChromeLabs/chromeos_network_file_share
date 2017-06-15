@@ -5,7 +5,7 @@ support connecting to SMB file shares.
 
 The NaCl port is currently patched from Samba 4.1.22.
 
-### Setup
+## Setup
 
 1) Download the NaCl SDK and unzip it as directed.
       https://developer.chrome.com/native-client/sdk/download
@@ -77,18 +77,6 @@ cd chromeos_network_file_share
 nacl/build.sh
 ```
 
-### Tests
-
-We use [Mocha](http://mochajs.org) and [Chai](http://chaijs.com/) as our test framework.
-
-To download the testing dependencies:
-```
-npm install --only=dev
-```
-To run the tests:
-```
-npm test
-```
 ### Arm Nacl_IO Bug
 
 There is currently a bug that causes a crash on ARM Release builds. Until the

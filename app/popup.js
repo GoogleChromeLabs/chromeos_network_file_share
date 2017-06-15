@@ -32,7 +32,9 @@ function mapErrorCodeToText(errorCode) {
 function onMountClicked() {
   log.debug('Mount clicked');
 
-  var sharePath = document.getElementById('sharePath').value;
+  var sharePath = document.getElementById('sharePath').sharePath;
+  var displayName = document.getElementById('sharePath').displayName;
+
   var domain = '';
   var user = '';
   var password = '';
@@ -71,6 +73,7 @@ function onMountClicked() {
               functionName: 'mount',
               mountInfo: {
                 sharePath: result.canonical,
+                displayName: displayName,
                 domain: domain,
                 user: user,
                 password: password,
