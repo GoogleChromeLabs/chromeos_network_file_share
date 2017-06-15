@@ -77,6 +77,19 @@ cd chromeos_network_file_share
 nacl/build.sh
 ```
 
+## Tests
+
+We use [Mocha](http://mochajs.org) and [Chai](http://chaijs.com/) as our test framework.
+
+To download the testing dependencies:
+```
+npm install --only=dev
+```
+To run the tests:
+```
+npm test
+```
+
 ### Arm Nacl_IO Bug
 
 There is currently a bug that causes a crash on ARM Release builds. Until the
