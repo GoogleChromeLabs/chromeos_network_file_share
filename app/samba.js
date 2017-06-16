@@ -601,15 +601,18 @@ SambaClient.prototype.readDirectoryHandler = function(
 
     var desiredBatchSize = 64;
     var batch = response.result.value;
-    var currentBatchSize = batch.length;
+    var filteredBatch = batch.map(function (entry) {
+      return this.filterRequestedData_(options, entry);
+    }.bind(this));
+    var currentBatchSize = filteredBatch.length;
     var upto = 0;
     if (currentBatchSize <= desiredBatchSize) {
       // Just send it without doing anything for small batches.
-      successFn(batch, response.hasMore);
+      successFn(filteredBatch, response.hasMore);
     } else {
       while (upto < currentBatchSize) {
         // Take a copy of a slice of the array.
-        var newBatch = sliceArray(batch, upto, desiredBatchSize);
+        var newBatch = sliceArray(filteredBatch, upto, desiredBatchSize);
         successFn(newBatch, true);
         upto += desiredBatchSize;
       }
