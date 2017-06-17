@@ -26,7 +26,7 @@ MetadataCache = function() {
 
 
 MetadataCache.prototype.cacheDirectoryContents = function(
-    fileSystemId, directoryPath, entries) {
+    fileSystemId, directoryPath, entries, currentTime) {
   if (!(fileSystemId in this.cache)) {
     log.debug('Starting cache for ' + fileSystemId);
     this.cache[fileSystemId] = {};
@@ -35,7 +35,7 @@ MetadataCache.prototype.cacheDirectoryContents = function(
   // Just overwrite if anything was there before.
   log.debug('Updating cache for ' + fileSystemId + '|' + directoryPath);
   this.cache[fileSystemId][directoryPath] = {
-    'timeCached': window.performance.now(),
+    'timeCached': currentTime,
     'entries': {},
     'incomplete_entries': {}
   };
@@ -52,7 +52,8 @@ MetadataCache.prototype.cacheDirectoryContents = function(
   }.bind(this));
 };
 
-MetadataCache.prototype.lookupMetadata = function(fileSystemId, entryPath) {
+MetadataCache.prototype.lookupMetadata = function(
+    fileSystemId, entryPath, currentTime) {
   var pathParts = this.splitEntryPath_(entryPath);
   var dirCache = this.getDirectoryCache_(fileSystemId, pathParts);
 
@@ -62,7 +63,7 @@ MetadataCache.prototype.lookupMetadata = function(fileSystemId, entryPath) {
 
   var entryExpiresAt =
       dirCache['timeCached'] + this.getCacheTimeMs_(pathParts['path']);
-  if (window.performance.now() >= entryExpiresAt) {
+  if (currentTime >= entryExpiresAt) {
     // Invalidates the metadata for the entire directory.
     log.debug('Invalidating dir cache for ' + pathParts['path']);
     var fsCache = this.cache[fileSystemId];

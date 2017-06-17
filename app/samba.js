@@ -439,7 +439,7 @@ SambaClient.prototype.getMetadataHandler = function(
 
   var updateCache = false;
   var cachedEntry = this.metadataCache.lookupMetadata(
-      options.fileSystemId, options.entryPath);
+      options.fileSystemId, options.entryPath, window.performance.now());
 
   if (cachedEntry) {
     var cacheHasStat = (cachedEntry.size != -1);
@@ -633,7 +633,8 @@ SambaClient.prototype.readDirectoryHandler = function(
                 'readDirectory[' + entries.length + ' results] ' +
                 options.directoryPath);
             this.metadataCache.cacheDirectoryContents(
-                options.fileSystemId, options.directoryPath, entries);
+                options.fileSystemId, options.directoryPath,
+                entries, window.performance.now());
           }.bind(this),
           function(err) {
             log.error('readDirectory failed with ' + err);
