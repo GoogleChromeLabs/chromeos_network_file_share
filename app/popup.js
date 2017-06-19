@@ -50,6 +50,8 @@ function onMountClicked() {
     saveCredentials = savePasswordCheckbox.checked;
     log.debug('domain=' + domain + ' user=' + user);
   }
+  log.info("Saving current share path: " + sharePath);
+  chrome.storage.local.set({'sharePath': sharePath});
 
   var toast = document.getElementById('errorToast');
 
@@ -177,6 +179,13 @@ function onDefaultPopupLoaded() {
   cancelButton.addEventListener('click', onCancel);
   passwordCheck.addEventListener('change', onPasswordChecked);
   licenseLink.addEventListener('click', onLicenseLinkClicked);
+
+  var sharePath = document.getElementById('sharePath');
+  chrome.storage.local.get('sharePath', function(result) {
+    if (!isEmpty(result)) {
+      sharePath.setValue(result.sharePath);
+    }
+  });
 
   enumerateFileShares();
   log.debug('Loading lmHosts');

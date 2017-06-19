@@ -61,6 +61,11 @@
           var cleanedPath = mainPath.replace('\\', '/');
           this._setDisplayName(cleanedPath);
         }
+      },
+
+      setValue: function(val) {
+        this.inputField.value = val;
+        this.inputChanged();
       }
 
     });
