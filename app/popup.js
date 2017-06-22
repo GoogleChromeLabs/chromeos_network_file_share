@@ -51,7 +51,12 @@ function onMountClicked() {
     log.debug('domain=' + domain + ' user=' + user);
   }
   log.info("Saving current share path: " + sharePath);
-  chrome.storage.local.set({'sharePath': sharePath});
+  var savedUser = user;
+  if (domain) {
+    savedUser = domain + '\\' + user;
+  }
+  chrome.storage.local.set({"sharePath": sharePath,
+    "shareUser": savedUser});
 
   var toast = document.getElementById('errorToast');
 
@@ -181,9 +186,17 @@ function onDefaultPopupLoaded() {
   licenseLink.addEventListener('click', onLicenseLinkClicked);
 
   var sharePath = document.getElementById('sharePath');
-  chrome.storage.local.get('sharePath', function(result) {
+  var checkBox = document.getElementById('passwordCheck');
+  var credentialCollapse = document.getElementById('collapsedContent');
+  var userInput = document.getElementById('user_domain_input');
+  chrome.storage.local.get(['sharePath', 'shareUser'], function(result) {
     if (!isEmpty(result)) {
       sharePath.setValue(result.sharePath);
+      if (result.hasOwnProperty('shareUser') && !isEmpty(result.shareUser)) {
+        checkBox.checked = true;
+        credentialCollapse.toggle();
+        userInput.setValue(result.shareUser);
+      }
     }
   });
 
