@@ -50,6 +50,17 @@ function onMountClicked() {
     saveCredentials = savePasswordCheckbox.checked;
     log.debug('domain=' + domain + ' user=' + user);
   }
+  log.info("Saving current share path: " + sharePath);
+  var savedUser = user;
+  if (domain) {
+    savedUser = domain + '\\' + user;
+  }
+
+  var mountData = {
+    "lastSharePath" : sharePath,
+    "lastShareUser" : savedUser
+  };
+  chrome.storage.local.set({"mountData": mountData});
 
   var toast = document.getElementById('errorToast');
 
@@ -177,6 +188,23 @@ function onDefaultPopupLoaded() {
   cancelButton.addEventListener('click', onCancel);
   passwordCheck.addEventListener('change', onPasswordChecked);
   licenseLink.addEventListener('click', onLicenseLinkClicked);
+
+  var sharePath = document.getElementById('sharePath');
+  var checkBox = document.getElementById('passwordCheck');
+  var credentialCollapse = document.getElementById('collapsedContent');
+  var userInput = document.getElementById('user_domain_input');
+  chrome.storage.local.get("mountData", function(result) {
+    if (!isEmpty(result) && result.hasOwnProperty('mountData')) {
+      var mountData = result.mountData;
+      sharePath.setValue(mountData.lastSharePath);
+      if (mountData.hasOwnProperty('lastShareUser') && !isEmpty(
+              mountData.lastShareUser)) {
+        checkBox.checked = true;
+        credentialCollapse.show();
+        userInput.setValue(mountData.lastShareUser);
+      }
+    }
+  });
 
   enumerateFileShares();
   log.debug('Loading lmHosts');

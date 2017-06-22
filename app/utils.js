@@ -258,3 +258,11 @@ function sliceArray(arr, begin, length) {
 function clamp(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
+
+function isEmpty(obj) {
+  for(var key in obj) {
+    if(obj.hasOwnProperty(key))
+      return false;
+  }
+  return true;
+}

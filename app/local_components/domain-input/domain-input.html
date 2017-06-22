@@ -63,6 +63,11 @@
         } else {
           this.$.domain_label.textContent = 'Error: Invalid user name';
         }
+      },
+
+      setValue: function(val) {
+        this.inputField.value = val;
+        this.inputChanged();
       }
     });
   </script>
