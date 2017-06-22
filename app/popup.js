@@ -55,8 +55,8 @@ function onMountClicked() {
   if (domain) {
     savedUser = domain + '\\' + user;
   }
-  chrome.storage.local.set({"sharePath": sharePath,
-    "shareUser": savedUser});
+  chrome.storage.local.set({"popup_share_key": sharePath,
+    "popup_user_key": savedUser});
 
   var toast = document.getElementById('errorToast');
 
@@ -189,13 +189,13 @@ function onDefaultPopupLoaded() {
   var checkBox = document.getElementById('passwordCheck');
   var credentialCollapse = document.getElementById('collapsedContent');
   var userInput = document.getElementById('user_domain_input');
-  chrome.storage.local.get(['sharePath', 'shareUser'], function(result) {
+  chrome.storage.local.get(['popup_share_key', 'popup_user_key'], function(result) {
     if (!isEmpty(result)) {
-      sharePath.setValue(result.sharePath);
-      if (result.hasOwnProperty('shareUser') && !isEmpty(result.shareUser)) {
+      sharePath.setValue(result.popup_share_key);
+      if (result.hasOwnProperty('popup_user_key') && !isEmpty(result.popup_user_key)) {
         checkBox.checked = true;
-        credentialCollapse.toggle();
-        userInput.setValue(result.shareUser);
+        credentialCollapse.show();
+        userInput.setValue(result.popup_user_key);
       }
     }
   });
