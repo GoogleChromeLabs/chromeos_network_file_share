@@ -32,8 +32,8 @@ function mapErrorCodeToText(errorCode) {
 function onMountClicked() {
   log.debug('Mount clicked');
 
-  var sharePath = document.getElementById('sharePath').sharePath;
-  var displayName = document.getElementById('sharePath').displayName;
+  var sharePath = document.getElementById('shareDropdown').sharePath;
+  var displayName = document.getElementById('shareDropdown').displayName;
 
   var domain = '';
   var user = '';
@@ -60,6 +60,7 @@ function onMountClicked() {
     "lastSharePath" : sharePath,
     "lastShareUser" : savedUser
   };
+
   chrome.storage.local.set({"mountData": mountData});
 
   var toast = document.getElementById('errorToast');
@@ -168,12 +169,23 @@ function enumerateFileShares() {
     chrome.runtime.sendMessage(message, function(response) {
       if (response.result) {
         log.info('enumerateFileShares succeeded');
-        // TODO(zentaro): Do something with this!
+        if (response.hasOwnProperty("result")) {
+          addFoundShares(response.result.value);
+        }
       } else {
         log.error('enumerateFileShares failed with ' + response.error);
       }
     });
   });
+}
+
+function addFoundShares(shares) {
+  if (shares) {
+    var sharesDropdown = document.getElementById("shareDropdown");
+    shares.forEach(function (share) {
+      sharesDropdown.addShare(share.fullPath);
+    });
+  }
 }
 
 function onDefaultPopupLoaded() {
@@ -189,10 +201,17 @@ function onDefaultPopupLoaded() {
   passwordCheck.addEventListener('change', onPasswordChecked);
   licenseLink.addEventListener('click', onLicenseLinkClicked);
 
-  var sharePath = document.getElementById('sharePath');
+  enumerateFileShares();
+  log.debug('Loading lmHosts');
+  lmHosts.load().then(function() { log.debug('lmHosts loaded.'); });
+}
+
+function loadPreviousShareInformation() {
+  var sharePath = document.getElementById('shareDropdown');
   var checkBox = document.getElementById('passwordCheck');
   var credentialCollapse = document.getElementById('collapsedContent');
   var userInput = document.getElementById('user_domain_input');
+
   chrome.storage.local.get("mountData", function(result) {
     if (!isEmpty(result) && result.hasOwnProperty('mountData')) {
       var mountData = result.mountData;
@@ -205,12 +224,7 @@ function onDefaultPopupLoaded() {
       }
     }
   });
-
-  enumerateFileShares();
-  log.debug('Loading lmHosts');
-  lmHosts.load().then(function() { log.debug('lmHosts loaded.'); });
 }
 
-
-
 document.addEventListener('DOMContentLoaded', onDefaultPopupLoaded);
+window.addEventListener('WebComponentsReady', loadPreviousShareInformation);
