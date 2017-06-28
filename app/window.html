@@ -18,6 +18,10 @@ Mount a share 'dialog'.
     <link rel="import" href="bower_components/paper-toast/paper-toast.html">
     <link rel="import" href="bower_components/iron-collapse/iron-collapse.html">
     <link rel="import" href="bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+    <link rel="import" href="bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+    <link rel="import" href="bower_components/paper-item/paper-item.html">
+    <link rel="import" href="bower_components/paper-listbox/paper-listbox.html">
+    <link rel="import" href="bower_components/vaadin-combo-box/vaadin-combo-box.html">
 
     <link rel="import" href="local_components/domain-input/domain-input.html">
     <link rel="import" href="local_components/display-input/display-input.html">
@@ -55,10 +59,7 @@ Mount a share 'dialog'.
         <span class="flex" id="header_text">Mount File Share</span>
       </paper-toolbar>
       <div id="body_content">
-        <div>
-          <display-input id="sharePath" autofocus></display-input>
-          <paper-tooltip for="sharePath" position="top" offset="0">The share path can either be in the Windows(tm) format eg. \\server\share or an smb URL eg. smb://server/share</paper-tooltip>
-        </div>
+        <display-input id="shareDropdown" autofocus></display-input>
         <paper-checkbox id="passwordCheck">My file share needs a password</paper-checkbox>
         <iron-collapse id="collapsedContent">
           <div>

@@ -4,8 +4,8 @@
 <dom-module id="display-input">
 
   <template>
-    <div id="container">
-      <paper-input id="input_field" spellcheck="false" maxlength="64" label="Share Path" on-input="inputChanged"></paper-input>
+    <div>
+      <vaadin-combo-box id="dropdown_menu" label="Share Path" items=[[pathsList]] on-value-changed="inputChanged" on-custom-value-set="customValueEntered"></vaadin-combo-box>
       <div>&nbsp;
         <paper-input id="display_field" spellcheck="false" maxlength="64" label="Display Name (Optional)" on-input="displayChanged"></paper-input>
         <paper-tooltip for="display_field" position="top" offset="0">How the share will appear in the file manager. If not specified, it will default to the share path.</paper-tooltip>
@@ -14,60 +14,87 @@
   </template>
 
   <script>
-    Polymer({
-      is: 'display-input',
-      properties: {
-        sharePath : {
-          type: String,
-          readOnly: true
+    HTMLImports.whenReady(function () {
+      Polymer({
+        is: 'display-input',
+        properties: {
+          sharePath: {
+            type: String,
+            readOnly: true
+          },
+          displayName: {
+            type: String,
+            readOnly: true
+          },
+          autofocus: {
+            type: Boolean,
+            value: false
+          }
         },
-        displayName: {
-          type: String,
-          readOnly: true
+
+        ready: function () {
+          this.dropdownMenu = this.$.dropdown_menu;
+          this.dropdownMenu.allowCustomValue = true;
+          this.pathsList = [];
+          this.displayField = this.$.display_field;
+          if (this.autofocus) {
+            this.focus();
+          }
         },
-        autofocus: {
-          type: Boolean,
-          value: false
+
+        addShare: function(share) {
+          this.push('pathsList', share);
+        },
+
+        setManagedShare: function(share) {
+          this.unshift('pathsList', share);
+          this.dropdownMenu.value = share;
+          this.notifyDisplayField(share);
+        },
+
+        inputChanged: function (event) {
+          var trimmedInput = event.detail.value.trim();
+          this.notifyDisplayField(trimmedInput);
+        },
+
+        customValueEntered: function(event) {
+          var customValue = event.detail.trim();
+          this.notifyDisplayField(customValue);
+        },
+
+        notifyDisplayField: function(value) {
+          this._setSharePath(value);
+
+          if (value.length > 0) {
+            var parts = value.split('\\');
+            var displayName = parts[parts.length - 1];
+            this._setDisplayName(displayName);
+            this.displayField.value = displayName;
+          }
+        },
+
+        displayChanged: function () {
+          var trimmedInput = this.displayField.value.trim();
+          if (trimmedInput.length > 0) {
+            this._setDisplayName(this.displayField.value.trim());
+          } else {
+            var sharePath = this.dropdownMenu.value.trim();
+            var mainPath = sharePath.replace('\\\\', '');
+            var cleanedPath = mainPath.replace('\\', '/');
+            this._setDisplayName(cleanedPath);
+          }
+        },
+
+        setValue: function (val) {
+          this.dropdownMenu.value = val;
+          this.notifyDisplayField(val);
+        },
+
+        focus: function () {
+          this.dropdownMenu.$.input.focus();
         }
-      },
 
-      ready: function() {
-        this.inputField = this.$.input_field;
-        this.displayField = this.$.display_field;
-        if (this.autofocus) {
-          this.inputField.$.input.focus();
-        }
-      },
-
-      inputChanged: function() {
-        var trimmedInput = this.inputField.value.trim();
-        this._setSharePath(trimmedInput);
-
-        if (trimmedInput.length > 0) {
-          var parts = trimmedInput.split('\\');
-          var displayName = parts[parts.length - 1];
-          this._setDisplayName(displayName);
-          this.displayField.value = displayName;
-        }
-      },
-
-      displayChanged: function() {
-        var trimmedInput = this.displayField.value.trim();
-        if (trimmedInput.length > 0) {
-          this._setDisplayName(this.displayField.value.trim());
-        } else {
-          var sharePath = this.inputField.value.trim();
-          var mainPath = sharePath.replace('\\\\', '');
-          var cleanedPath = mainPath.replace('\\', '/');
-          this._setDisplayName(cleanedPath);
-        }
-      },
-
-      setValue: function(val) {
-        this.inputField.value = val;
-        this.inputChanged();
-      }
-
+      });
     });
   </script>
 </dom-module>
