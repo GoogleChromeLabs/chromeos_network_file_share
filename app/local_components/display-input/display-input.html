@@ -5,7 +5,7 @@
 
   <template>
     <div>
-      <paper-input id="share_input_field" spellcheck="false" maxlength="64" label="Share Path" on-input="inputChanged"></paper-input>
+      <vaadin-combo-box id="dropdown_menu" label="Share Path" items=[[pathsList]] on-value-changed="inputChanged" on-custom-value-set="customValueEntered"></vaadin-combo-box>
       <div>&nbsp;
         <paper-input id="display_field" spellcheck="false" maxlength="64" label="Display Name (Optional)" on-input="displayChanged"></paper-input>
         <paper-tooltip for="display_field" position="top" offset="0">How the share will appear in the file manager. If not specified, it will default to the share path.</paper-tooltip>
@@ -33,19 +33,34 @@
         },
 
         ready: function () {
-          this.inputField = this.$.share_input_field;
+          this.dropdownMenu = this.$.dropdown_menu;
+          this.dropdownMenu.allowCustomValue = true;
+          this.pathsList = [];
           this.displayField = this.$.display_field;
           if (this.autofocus) {
-            this.inputField.$.input.focus();
+            this.focus();
           }
         },
 
-        inputChanged: function () {
-          var trimmedInput = this.inputField.value.trim();
-          this._setSharePath(trimmedInput);
+        addShare: function(share) {
+          this.push('pathsList', share);
+        },
 
-          if (trimmedInput.length > 0) {
-            var parts = trimmedInput.split('\\');
+        inputChanged: function (event) {
+          var trimmedInput = event.detail.value.trim();
+          this.notifyDisplayField(trimmedInput);
+        },
+
+        customValueEntered: function(event) {
+          var customValue = event.detail.trim();
+          this.notifyDisplayField(customValue);
+        },
+
+        notifyDisplayField: function(value) {
+          this._setSharePath(value);
+
+          if (value.length > 0) {
+            var parts = value.split('\\');
             var displayName = parts[parts.length - 1];
             this._setDisplayName(displayName);
             this.displayField.value = displayName;
@@ -57,7 +72,7 @@
           if (trimmedInput.length > 0) {
             this._setDisplayName(this.displayField.value.trim());
           } else {
-            var sharePath = this.inputField.value.trim();
+            var sharePath = this.dropdownMenu.value.trim();
             var mainPath = sharePath.replace('\\\\', '');
             var cleanedPath = mainPath.replace('\\', '/');
             this._setDisplayName(cleanedPath);
@@ -65,8 +80,12 @@
         },
 
         setValue: function (val) {
-          this.inputField.value = val;
-          this.inputChanged();
+          this.dropdownMenu.value = val;
+          this.notifyDisplayField(val);
+        },
+
+        focus: function () {
+          this.dropdownMenu.$.input.focus();
         }
 
       });
