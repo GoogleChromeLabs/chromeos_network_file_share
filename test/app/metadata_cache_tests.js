@@ -57,4 +57,36 @@ describe('MetadataCache', function() {
       assert.isNull(deletedItem);
     });
   });
+
+  describe("Purging entries in cache", function() {
+    var timeOutLength = 500;
+    var cache = new MetadataCache(timeOutLength);
+    const fileSystemId = "smb://127.0.0.1/testshare";
+    const directoryPath = "/tmp";
+    const entryName = "test.jpg";
+    var entry = {
+      fullPath : "",
+      name : entryName,
+      isDirectory : false
+    };
+    var date = new Date();
+    const requestEntryPath = directoryPath + "/" + entry.name;
+
+    it("should still have value", function() {
+      cache.cacheDirectoryContents(fileSystemId, directoryPath, [],
+          date.getTime());
+      cache.updateMetadata(fileSystemId, requestEntryPath, entry);
+      var item = cache.lookupMetadata(fileSystemId, requestEntryPath);
+      assert(item);
+      assert.equal(item.name, entryName);
+    });
+
+    it("should expire cache", function(done) {
+      setTimeout(function() {
+        var deletedItem = cache.lookupMetadata(fileSystemId, requestEntryPath);
+        assert.isNull(deletedItem);
+        done();
+      }, timeOutLength);
+    })
+  });
 });

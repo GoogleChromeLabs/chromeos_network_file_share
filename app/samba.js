@@ -43,7 +43,7 @@ var SambaClient = function() {
   log.info('Initializing samba client');
   this.messageId_ = 0;
   this.router = new MessageRouter();
-  this.metadataCache = new MetadataCache();
+  this.metadataCache = new MetadataCache(300000);
   this.fsp = chrome.fileSystemProvider;
   this.mounts = {};
   this.credentials = new CredStore();

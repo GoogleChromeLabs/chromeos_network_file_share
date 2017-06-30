@@ -20,8 +20,15 @@
  * individual getMetadata requests. readDirectory calls currently don't use the
  * cache (but could with some modification).
  */
-MetadataCache = function() {
+
+MetadataCache = function(cachePurgeLengthMs) {
   this.cache = {};
+  if (cachePurgeLengthMs) {
+    setInterval(function () {
+      log.debug("Purging cache");
+      this.cache = {};
+    }.bind(this), cachePurgeLengthMs);
+  }
 };
 
 
