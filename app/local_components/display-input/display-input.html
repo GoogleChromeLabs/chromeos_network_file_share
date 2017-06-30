@@ -46,12 +46,6 @@
           this.push('pathsList', share);
         },
 
-        setManagedShare: function(share) {
-          this.unshift('pathsList', share);
-          this.dropdownMenu.value = share;
-          this.notifyDisplayField(share);
-        },
-
         inputChanged: function (event) {
           var trimmedInput = event.detail.value.trim();
           this.notifyDisplayField(trimmedInput);
