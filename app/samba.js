@@ -39,11 +39,13 @@ var METADATA_FIELD_BITS = {
   'mimeType': 32
 };
 
+const metadataCachePurgeLengthMs = 300000;
+
 var SambaClient = function() {
   log.info('Initializing samba client');
   this.messageId_ = 0;
   this.router = new MessageRouter();
-  this.metadataCache = new MetadataCache(300000);
+  this.metadataCache = new MetadataCache(metadataCachePurgeLengthMs);
   this.fsp = chrome.fileSystemProvider;
   this.mounts = {};
   this.credentials = new CredStore();
