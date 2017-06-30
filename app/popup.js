@@ -226,5 +226,25 @@ function loadPreviousShareInformation() {
   });
 }
 
+function getManagedShares() {
+  chrome.storage.managed.get("ManagedShares", function(data) {
+    if (!isEmpty(data) && data.hasOwnProperty("ManagedShares")) {
+      log.info("Found managed shares: " + JSON.stringify(data));
+      var shareField = document.getElementById('shareDropdown');
+      var shares = data.ManagedShares.items;
+      if (shares.length > 0) {
+        var defaultShare = shares[0];
+        shareField.setManagedShare(defaultShare);
+
+        for (var i = 1; i < shares.length; i++) {
+          var share = shares[i];
+          shareField.addShare(share);
+        }
+      }
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', onDefaultPopupLoaded);
 window.addEventListener('WebComponentsReady', loadPreviousShareInformation);
+window.addEventListener('WebComponentsReady', getManagedShares);
