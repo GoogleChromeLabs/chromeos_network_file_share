@@ -59,8 +59,7 @@ describe('MetadataCache', function() {
   });
 
   describe("Purging entries in cache", function() {
-    var timeOutLength = 500;
-    var cache = new MetadataCache(timeOutLength);
+    var cache = new MetadataCache();
     const fileSystemId = "smb://127.0.0.1/testshare";
     const directoryPath = "/tmp";
     const entryName = "test.jpg";
@@ -69,24 +68,22 @@ describe('MetadataCache', function() {
       name : entryName,
       isDirectory : false
     };
-    var date = new Date();
     const requestEntryPath = directoryPath + "/" + entry.name;
 
     it("should still have value", function() {
+      var startTime = 0;
       cache.cacheDirectoryContents(fileSystemId, directoryPath, [],
-          date.getTime());
+          startTime);
       cache.updateMetadata(fileSystemId, requestEntryPath, entry);
       var item = cache.lookupMetadata(fileSystemId, requestEntryPath);
       assert(item);
       assert.equal(item.name, entryName);
     });
 
-    it("should expire cache", function(done) {
-      setTimeout(function() {
+    it("should expire cache", function() {
+        cache.purgeContents(cache.cache[fileSystemId]);
         var deletedItem = cache.lookupMetadata(fileSystemId, requestEntryPath);
         assert.isNull(deletedItem);
-        done();
-      }, timeOutLength);
     })
   });
 });

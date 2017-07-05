@@ -21,16 +21,41 @@
  * cache (but could with some modification).
  */
 
-MetadataCache = function(cachePurgeLengthMs) {
+MetadataCache = function() {
   this.cache = {};
-  if (cachePurgeLengthMs) {
-    setInterval(function () {
-      log.debug("Purging cache");
-      this.cache = {};
-    }.bind(this), cachePurgeLengthMs);
-  }
+  setInterval(function () {
+    for (var entry in this.cache) {
+      this.purgeContents(this.cache[entry]);
+    }
+  }.bind(this), this.getCacheTimeMs_());
 };
 
+MetadataCache.prototype.purgeContents = function(entry) {
+  log.debug("Attempting to purge cache");
+  var numKeys = Object.keys(entry).length;
+
+  log.debug("Cache contains: " + numKeys + " items");
+  var numExpired = 0;
+  for (var key in entry) {
+      if (!entry.hasOwnProperty(key)) continue;
+      if (this.shouldPurgeEntry(entry[key])) {
+        log.debug("Purging: " + key);
+        numExpired++;
+        delete entry[key];
+      }
+  }
+  log.debug("Expired: " + numExpired + " items");
+};
+
+MetadataCache.prototype.shouldPurgeEntry = function(entry){
+  if (entry.hasOwnProperty("timeCached")) {
+    var currentTime = Date.now();
+    var entryExpiresAt =
+        entry['timeCached'] + this.getCacheTimeMs_(entry);
+    return currentTime >= entryExpiresAt;
+  }
+  return false;
+};
 
 MetadataCache.prototype.cacheDirectoryContents = function(
     fileSystemId, directoryPath, entries, currentTime) {
