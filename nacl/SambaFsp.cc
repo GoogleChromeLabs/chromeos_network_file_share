@@ -16,11 +16,14 @@
 #include "SambaFsp.h"
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "ppapi/cpp/var.h"
 #include "ppapi/cpp/var_array_buffer.h"
 #include "ppapi/cpp/var_dictionary.h"
 #include "util.h"
-
+#include "sys/mount.h"
+#include <iostream>
+#include <fstream>
 namespace NaclFsp {
 
 // Define static
@@ -28,6 +31,18 @@ SambaFsp::CredentialStore SambaFsp::Credentials;
 
 SambaFsp::SambaFsp() {
   // TODO(zentaro): Move to init function instead?
+
+  // Mounting in-memory file share to load smb.conf
+  ::mount("", "/etc/samba/.smb", "memfs", 0, "");
+  std::ofstream myfile;
+  char myEnv[]="HOME=/etc/samba";
+  putenv(myEnv);
+  myfile.open("/etc/samba/.smb/smb.conf", std::fstream::in | std::fstream::out | std::fstream::trunc);
+  if (myfile.is_open()) {
+    this->logger.Debug("Overriding smb.conf");
+    myfile << "[global]\nclient max protocol = SMB3";
+    myfile.close();
+  }
   int debugLevel = 100;
 
   this->logger.Debug("SambaFsp constructor");
