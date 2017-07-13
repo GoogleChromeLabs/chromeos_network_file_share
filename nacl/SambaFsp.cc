@@ -22,7 +22,6 @@
 #include "ppapi/cpp/var_dictionary.h"
 #include "util.h"
 #include "sys/mount.h"
-#include <iostream>
 #include <fstream>
 namespace NaclFsp {
 
