@@ -51,6 +51,9 @@ git clone https://github.com/GoogleChrome/chromeos_network_file_share
 ```
 9) Install bower.
       https://syntaxsugar.github.io/posts/2014/05/how-to-install-bower-on-ubuntu-1404-lts/
+      
+*Note:
+If you are a Google employee, please follow `sites/nodejs/installing-node` for node installation
 ```
 sudo apt-get install nodejs
 sudo ln -s /usr/bin/nodejs /usr/bin/node
