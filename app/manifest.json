@@ -14,6 +14,9 @@
       "page": "plugin.html"
     }
   },
+  "storage": {
+    "managed_schema": "schema.json"
+  },
   "permissions": [
     "fileSystemProvider",
     "system.network",
