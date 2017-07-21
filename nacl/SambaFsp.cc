@@ -39,7 +39,10 @@ SambaFsp::SambaFsp() {
   myfile.open("/etc/samba/.smb/smb.conf", std::fstream::in | std::fstream::out | std::fstream::trunc);
   if (myfile.is_open()) {
     this->logger.Debug("Overriding smb.conf");
-    myfile << "[global]\nclient max protocol = SMB3";
+    myfile << "[global]\n" <<
+           "client max protocol = SMB3\n" <<
+           "client ipc min protocol = SMB2\n" <<
+           "client min protocol = SMB2";
     myfile.close();
   }
   int debugLevel = 100;
