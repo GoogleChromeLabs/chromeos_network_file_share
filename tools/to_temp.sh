@@ -17,7 +17,7 @@
 
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 SOURCE_PATH="${THIS_DIR}/../app"
-TEMP_DIR=$(mktemp -d)
+TEMP_DIR=/tmp/samba
 PACKAGE_NAME="samba_fsp_app"
 PACKAGE_FILE="${PACKAGE_NAME}.zip"
 LOCAL_OUTPUT_PATH="${TEMP_DIR}/${PACKAGE_FILE}"
