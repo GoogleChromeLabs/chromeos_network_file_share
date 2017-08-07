@@ -391,6 +391,15 @@ bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
                              pp::VarDictionary* result) {
   this->logger.Info("readDirectory: " + options.directoryPath + " mask=" +
                     Util::ToString(options.fieldMask));
+  {
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    long long mslong = (long long) tp.tv_sec * 1000L
+        + tp.tv_usec / 1000; //get current timestamp in milliseconds
+    std::cout << "(T2.1) SamfaFsp::readDirectory " << mslong
+              << std::endl;
+  }
+
   std::vector<EntryMetadata> entries;
   std::string relativePath = options.directoryPath;
 
@@ -414,12 +423,14 @@ bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
   }
 
   if (options.needsStat()) {
+    std::cout << "Needs stat" << std::endl;
     // If size or modification time was requested entries are stat()'d
     // and streamed in batches.
     this->statAndStreamEntryMetadata(messageId, &entries);
     this->logger.Debug("readDirectory: with stat COMPLETE " + fullPath);
     return true;
   } else {
+    std::cout << "Doesn't need stat" << std::endl;
     // When stat() information is not required just return the
     // info from getdents (name and isDir).
     this->setResultFromEntryMetadataVector(entries.begin(), entries.end(),

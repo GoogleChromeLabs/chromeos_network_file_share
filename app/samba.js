@@ -635,6 +635,7 @@ SambaClient.prototype.readDirectoryHandler = function(
   this.sendMessage_('readDirectory', [options], processDataFn)
       .then(
           function() {
+            console.log("(T2.3) Read directory received: " + (new Date()).getTime());
             log.info(
                 'readDirectory[' + entries.length + ' results] ' +
                 options.directoryPath);

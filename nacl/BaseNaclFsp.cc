@@ -22,6 +22,8 @@
 #include "ppapi_simple/ps.h"
 #include "ppapi_simple/ps_interface.h"
 
+#include <iostream>
+#include "sys/time.h"
 namespace NaclFsp {
 
 BaseNaclFsp::BaseNaclFsp() { this->logger.Info("BaseNaclFsp constructor"); }
@@ -181,7 +183,14 @@ void BaseNaclFsp::setResultFromEntryMetadataVector(
     entriesArray.Set(index, entryDict);
     index++;
   }
-
+  {
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    long long mslong = (long long) tp.tv_sec * 1000L
+        + tp.tv_usec / 1000; //get current timestamp in milliseconds
+    std::cout << "(T2.2) SamfaFsp::readDirectory End: " << mslong
+              << std::endl;
+  }
   result->Set(pp::Var("value"), entriesArray);
 }
 
