@@ -423,14 +423,12 @@ bool SambaFsp::readDirectory(const ReadDirectoryOptions& options, int messageId,
   }
 
   if (options.needsStat()) {
-    std::cout << "Needs stat" << std::endl;
     // If size or modification time was requested entries are stat()'d
     // and streamed in batches.
     this->statAndStreamEntryMetadata(messageId, &entries);
     this->logger.Debug("readDirectory: with stat COMPLETE " + fullPath);
     return true;
   } else {
-    std::cout << "Doesn't need stat" << std::endl;
     // When stat() information is not required just return the
     // info from getdents (name and isDir).
     this->setResultFromEntryMetadataVector(entries.begin(), entries.end(),
