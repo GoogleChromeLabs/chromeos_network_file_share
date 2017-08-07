@@ -486,16 +486,19 @@ SambaClient.prototype.getMetadataHandler = function(
         batchOptions['entries'] = batch;
         delete batchOptions['entryPath'];
 
+        log.warning("(T6) samba.js#getMetadatahandler Sending batchGetMetadata: " + (new Date).getTime());
         this.sendMessage_('batchGetMetadata', [batchOptions])
             .then(
                 function(response) {
-                  log.debug('batchGetMetadata succeeded');
+                  console.log('(T9) samba.js#batchGetMetadata received: ' + (new Date()).getTime());
+
                   var sentRequestedResult = false;
                   response.result.value.forEach(function(entry) {
                     var result = this.handleStatEntry_(
                         options, options.entryPath, entry);
                     // The first item in the batch is the cache miss that
                     // triggered the batch so fire that off.
+
                     if (!sentRequestedResult) {
                       log.info('getMetadata[cache miss] ' + options.entryPath);
                       successFn(result);
@@ -579,7 +582,7 @@ SambaClient.prototype.createFieldMask_ = function(options) {
 
 SambaClient.prototype.readDirectoryHandler = function(
     options, successFn, errorFn) {
-  log.debug('readDirectoryHandler called');
+  log.warning('(T2) samba.js#readDirectoryHandler: ' + (new Date()).getTime());
 
   var entries = [];
   var startTime = window.performance.now();

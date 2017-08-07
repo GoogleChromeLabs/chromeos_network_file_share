@@ -23,6 +23,11 @@
 #include "util.h"
 #include "sys/mount.h"
 #include <fstream>
+#include <ctime>
+#include <sstream>
+#include <iostream>
+#include "sys/time.h"
+
 namespace NaclFsp {
 
 // Define static
@@ -76,7 +81,7 @@ void SambaFsp::auth_fn(const char* srv, const char* shr, char* wg, int wglen,
                        char* un, int unlen, char* pw, int pwlen) {
   // TODO(zentaro): Do better than this. Note duplication in saveCredentials.
   std::string lookup = std::string(srv) + "$$$" + std::string(shr);
-  printf("TEMP: lookup=%s\n", lookup.c_str());
+//  printf("TEMP: lookup=%s\n", lookup.c_str());
   CredentialStore::iterator it = SambaFsp::Credentials.find(lookup);
 
   if (it == SambaFsp::Credentials.end()) {
@@ -311,6 +316,11 @@ void SambaFsp::batchGetMetadata(const BatchGetMetadataOptions& options,
                                 pp::VarDictionary* result) {
   std::vector<EntryMetadata> entries;
 
+  struct timeval tp;
+  gettimeofday(&tp, NULL);
+  long long mslong = (long long) tp.tv_sec * 1000L + tp.tv_usec / 1000; //get current timestamp in milliseconds
+  std::cout << "(T7) SambaFsp#batchGetMetadata Begin: " << mslong << std::endl;
+
   for (std::vector<std::string>::const_iterator it = options.entries.begin();
        it != options.entries.end(); ++it) {
     std::string fullPath =
@@ -323,7 +333,10 @@ void SambaFsp::batchGetMetadata(const BatchGetMetadataOptions& options,
 
     entries.push_back(entry);
   }
-
+  struct timeval te;
+  gettimeofday(&te, NULL);
+  long long msend = (long long) te.tv_sec * 1000L + te.tv_usec / 1000; //get current timestamp in milliseconds
+  std::cout << "(T8) SambaFsp#batchGetMetadata End: " << msend << std::endl;
   this->setResultFromEntryMetadataVector(entries.begin(), entries.end(),
                                          result);
 }
