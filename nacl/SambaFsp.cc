@@ -356,6 +356,13 @@ void SambaFsp::LogErrorAndSetErrorResult(std::string operationName,
       // retry but once retrying fails to respond with a valid error code.
       errorString = "SHOULD_RETRY";
       break;
+    case EINVAL:
+      if (operationName == "getMetadataEntry:smbc_stat") {
+        errorString = "NOT_FOUND";
+      } else {
+        errorString = "FAILED";
+      }
+      break;
     default:
       errorString = "FAILED";
       break;
