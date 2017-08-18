@@ -2,10 +2,22 @@
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">
 
 <dom-module id="display-input">
+  <link rel="import" type="css" href="display-input.css">
 
   <template>
     <div>
-      <vaadin-combo-box id="dropdown_menu" label="Share Path" items=[[pathsList]] on-value-changed="inputChanged" on-custom-value-set="customValueEntered"></vaadin-combo-box>
+      <vaadin-combo-box id="dropdown_menu" item-value-path="path" item-label-path="path" label="Share Path" items=[[pathsList]] on-value-changed="inputChanged" on-custom-value-set="customValueEntered">
+        <template>
+          <paper-icon-item style="padding: 0">
+            <div class="arrange-horizontally">
+            <img id="path_icon" src="[[item.icon]]" item-icon>
+            <paper-item-body class="text-elem">
+              <div>[[item.path]]</div>
+            </paper-item-body>
+            </div>
+          </paper-icon-item>
+        </template>
+      </vaadin-combo-box>
       <div>&nbsp;
         <paper-input id="display_field" spellcheck="false" maxlength="64" label="Display Name (Optional)" on-input="displayChanged"></paper-input>
         <paper-tooltip for="display_field" position="top" offset="0">How the share will appear in the file manager. If not specified, it will default to the share path.</paper-tooltip>
@@ -40,10 +52,26 @@
           if (this.autofocus) {
             this.focus();
           }
+          this.setLoading(true);
         },
 
         addShare: function(share) {
-          this.push('pathsList', share);
+          this.push('pathsList', {icon:"", "path":share});
+        },
+
+        setManagedShare: function(share, isDefault) {
+          var shareItem = {icon: "../../icon_domain.png", "path": share};
+          if (isDefault) {
+            this.unshift('pathsList', shareItem);
+            this.dropdownMenu.value = share;
+            this.notifyDisplayField(share);
+          } else {
+            this.push('pathsList', shareItem);
+          }
+        },
+
+        setLoading: function(loading) {
+          this.dropdownMenu.loading = loading;
         },
 
         inputChanged: function (event) {

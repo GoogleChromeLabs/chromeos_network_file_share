@@ -169,23 +169,24 @@ function enumerateFileShares() {
     chrome.runtime.sendMessage(message, function(response) {
       if (response.result) {
         log.info('enumerateFileShares succeeded');
-        if (response.hasOwnProperty("result")) {
-          addFoundShares(response.result.value);
-        }
+        addFoundShares(response.result.value);
       } else {
         log.error('enumerateFileShares failed with ' + response.error);
+        var sharesDropdown = document.getElementById("shareDropdown");
+        sharesDropdown.setLoading(false);
       }
     });
   });
 }
 
 function addFoundShares(shares) {
+  var sharesDropdown = document.getElementById("shareDropdown");
   if (shares) {
-    var sharesDropdown = document.getElementById("shareDropdown");
     shares.forEach(function (share) {
       sharesDropdown.addShare(share.fullPath);
     });
   }
+  sharesDropdown.setLoading(false);
 }
 
 function onDefaultPopupLoaded() {
@@ -226,5 +227,21 @@ function loadPreviousShareInformation() {
   });
 }
 
+function getManagedShares() {
+  chrome.storage.managed.get("ManagedShares", function(data) {
+    var shareField = document.getElementById('shareDropdown');
+    if (!isEmpty(data) && data.hasOwnProperty("ManagedShares")) {
+      log.info("Found managed shares: " + JSON.stringify(data));
+      var shares = data.ManagedShares;
+      for (var i = 0; i < shares.length; i++) {
+        var share = shares[i];
+        //We are using the first item as default share
+        shareField.setManagedShare(share, i === 0);
+      }
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', onDefaultPopupLoaded);
 window.addEventListener('WebComponentsReady', loadPreviousShareInformation);
+window.addEventListener('WebComponentsReady', getManagedShares);
