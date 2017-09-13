@@ -23,8 +23,6 @@ function mapErrorCodeToText(errorCode) {
       return 'This file share is already mounted.';
     case 'NOT_FOUND':
       return 'File share can\'t be found. Check the share path is correct.';
-    case 'CANT_RESOLVE':
-      return 'The server name could not be resolved';
     case 'FAILED':
     default:
       return 'Share could not be mounted.';

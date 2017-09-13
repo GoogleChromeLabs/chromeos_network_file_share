@@ -228,7 +228,7 @@ void SambaFsp::mount(const MountOptions& options,
   if (shareId < 0) {
     if (mountConfig.serverIP.empty()) {
       this->logger.Error("Could not resolve IP for: " + mountConfig.sharePath);
-      this->setErrorResult("CANT_RESOLVE", result);
+      this->setErrorResult("NOT_FOUND", result);
     } else {
       LogErrorAndSetErrorResult("mount:smbc_opendir", result);
     }
