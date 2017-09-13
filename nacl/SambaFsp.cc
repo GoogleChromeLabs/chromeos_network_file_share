@@ -226,7 +226,12 @@ void SambaFsp::mount(const MountOptions& options,
   this->logger.Info("****************** Opening " + mountConfig.sharePath);
   int shareId = smbc_opendir(mountConfig.sharePath.c_str());
   if (shareId < 0) {
-    LogErrorAndSetErrorResult("mount:smbc_opendir", result);
+    if (mountConfig.serverIP.empty()) {
+      this->logger.Error("Could not resolve IP for: " + mountConfig.sharePath);
+      this->setErrorResult("CANT_RESOLVE", result);
+    } else {
+      LogErrorAndSetErrorResult("mount:smbc_opendir", result);
+    }
     removeCredentials(mountConfig);
     return;
   }
