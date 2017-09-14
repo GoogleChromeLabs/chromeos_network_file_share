@@ -156,13 +156,56 @@ function onLicenseLinkClicked() {
   loadLicensePage();
 }
 
+function mdnsListener(services) {
+  if (Array.isArray(services) && services.length) {
+    log.debug("Received mdns services");
+    services.forEach(function (service) {
+      log.debug(JSON.stringify(service));
+      var ipAddress = service.ipAddress;
+      if (isValidIpv4(ipAddress)) {
+        var serviceName = service.serviceName
+            .replace("._smb._tcp.local", "")
+            .replace("(SMB)", "");
+        mdnsCache[serviceName] = ipAddress;
+      } else {
+        log.warning("Non ipv4 IP address found, ignoring: " + ipAddress);
+      }
+    });
+  }
+}
+
+function listenForMdnsEvents() {
+  log.info("Setting up mdns listener");
+  chrome.mdns.onServiceList.addListener(mdnsListener, {
+    serviceType:"_smb._tcp.local"
+  });
+}
+
 function enumerateFileShares() {
   getAllShareRoots().then(function(hostInfoMap) {
     var hostIPMap = {};
     for (var hostName in hostInfoMap) {
       hostIPMap[hostName] = hostInfoMap[hostName].ipAddress;
     }
-
+    // Add found hosts from mdns
+    // TODO(allenvic): Possibly improve from O(n**2)?
+    for (var host in mdnsCache) {
+      var found = false;
+      Object.keys(hostIPMap).forEach(function (key) {
+        if (hostIPMap[key] === mdnsCache[host]) {
+          log.info("Same IP found, ignoring");
+          found = true;
+        } else if (key === host) {
+          log.warning("Same host found with different IP Address, ignoring");
+          found = true;
+        }
+      });
+      if (!found) {
+        log.info(
+            "Adding: " + host + " and: " + mdnsCache[host] + " from mdnsCache");
+        hostIPMap[host] = mdnsCache[host];
+      }
+    }
     var message = {functionName: 'enumerateFileShares', hostMap: hostIPMap};
 
     log.debug('enumerateFileShares sending message to background');

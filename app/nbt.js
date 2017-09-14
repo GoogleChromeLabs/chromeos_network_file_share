@@ -19,6 +19,7 @@
  */
 var ipCache = new IPCache();
 
+var mdnsCache = {};
 
 /**
  * Send NetBIOS name request on all network interfaces and returns
@@ -26,6 +27,7 @@ var ipCache = new IPCache();
  */
 function getAllShareRoots() {
   var resolver = getPromiseResolver();
+  listenForMdnsEvents();
 
   // TODO(zentaro): This should probably merge the lists.
   getNetworkInterfaces().then(function(interfaces) {
@@ -78,6 +80,8 @@ function resolveFileShareHostName(hostName) {
       log.info('LMHosts resolved ' + hostName + ' to ' + ipAddress);
     } else if (ipAddress = ipCache.resolve(hostName)) {
       log.info('IPCache resolved ' + hostName + ' to ' + ipAddress);
+    } else if (ipAddress = mdnsCache[hostName]) {
+      log.info('Mdns cache resolved ' + hostName + ' to ' + ipAddress);
     } else {
       getAllShareRoots().then(function() {
         ipAddress = ipCache.resolve(hostName);
