@@ -47,19 +47,21 @@ cd webports/src
 ```
 8) Get the App code.
 ```
+cd ~
 git clone https://github.com/GoogleChrome/chromeos_network_file_share
 ```
-9) Install bower.
+9) Install node & npm.
       https://syntaxsugar.github.io/posts/2014/05/how-to-install-bower-on-ubuntu-1404-lts/
       
 *Note:
-If you are a Google employee, please follow `sites/nodejs/installing-node` for node installation
+If you are a Google employee, please follow `go/installnode` followed by `sudo npm install -g bower`
 ```
 sudo apt-get install nodejs
 sudo ln -s /usr/bin/nodejs /usr/bin/node
 sudo apt-get install npm
 sudo npm install -g bower
 ```
+
 10) Get the bower dependencies.
 ```
 cd chromeos_network_file_share/app
@@ -78,6 +80,10 @@ sudo npm install -g crisper
 ```
 cd chromeos_network_file_share
 nacl/build.sh
+```
+14) Export zip to temp folder
+```
+tools/to_temp.sh
 ```
 
 ## Tests
