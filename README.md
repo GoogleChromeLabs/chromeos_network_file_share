@@ -81,6 +81,10 @@ sudo npm install -g crisper
 cd chromeos_network_file_share
 nacl/build.sh
 ```
+14) Export zip to temp folder
+```
+tools/to_temp.sh
+```
 
 ## Tests
 
