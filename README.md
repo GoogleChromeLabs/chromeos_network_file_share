@@ -1,3 +1,24 @@
+---
+#### *** THIS EXTENSION IS DEPRECATED. SINCE CHROME 71 THIS FUNCTIONALITY IS BUILT IN TO CHROME OS ***
+---
+
+On Chrome 71 or higher you can:
+
+* Open the files app
+* Click the "three dot menu" in the top right
+* Choose "Add New Service"
+* Choose "SMB file share"
+
+A dialog in settings will open (in 72 and later it's a standalone dialog). Enter your share information as before.
+
+You can uninstall the chrome app as it will be deprecated in the near future. 
+
+**_If you have bugs with the new implementation you can open them at crbug.com under component "Platform>Apps>FileManager" with SMB in the title._**
+
+There will be no more work on this implementation.
+
+---
+
 ## Overview
 
 This is a Chrome App that extends the built in File Manager to be able to
